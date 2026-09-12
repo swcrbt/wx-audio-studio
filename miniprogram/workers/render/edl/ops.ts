@@ -12,16 +12,23 @@
  * - `timelineStart >= 0`、`speed > 0`
  * - 同一轨道的片段**允许重叠**（用于交叉淡化，docs/03 §5.3），但按 `timelineStart` 升序存放
  */
-import type { Asset, Clip, Edl, FadeSpec, Id, Seconds, Track } from '../../../core/types';
+import type {
+  Asset,
+  Clip,
+  Edl,
+  FadeSpec,
+  Id,
+  Seconds,
+  TimeRange,
+  Track,
+} from '../../../core/types';
 import { clipDurationSec, clipEndSec, isTrackAudible, trackById, trackDurationSec } from './query';
 
 /** 时间轴网格步长（吸附用，docs/01 ED-10：0.1s 网格）。 */
 export const SNAP_GRID_SEC = 0.1;
 
-export interface TimeRange {
-  startSec: Seconds;
-  endSec: Seconds;
-}
+/** 区间类型来自 `core/types.ts`（唯一定义处），此处重新导出以便调用方就近引用。 */
+export type { TimeRange };
 
 /** 把秒对齐到采样帧边界：`round(t × sampleRate) / sampleRate`（docs/05 §9）。 */
 export function frameAlignSec(sec: Seconds, sampleRate: number): Seconds {
