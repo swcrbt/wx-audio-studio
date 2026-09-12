@@ -32,6 +32,13 @@ export interface RenderJob {
   targetPath?: string;
   /** 总线是否挂限制器，默认 true（docs/01 FX-12 导出前防削波）。 */
   limiter?: boolean;
+  /**
+   * 总线增益（dB），默认为 0。
+   *
+   * 导出归一化用它：主线程先根据峰值估算算好增益，再交给渲染引擎，
+   * **位置在限制器之前**（先归一再限制，顺序见 docs/03 §6.6）。
+   */
+  busGainDb?: number;
 }
 
 /** 主线程 → Worker。 */

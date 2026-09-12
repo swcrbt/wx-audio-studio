@@ -378,6 +378,17 @@ export function renderChunk(
     }
   }
 
+  // 总线：归一化增益（导出时由主线程算好）——必须在限制器之前
+  const busGainDb = state.job.busGainDb ?? 0;
+  if (busGainDb !== 0) {
+    const busGainLinear = dbToLinear(busGainDb);
+    for (let channel = 0; channel < state.channels; channel++) {
+      const buf = out[channel];
+      if (!buf) continue;
+      for (let i = 0; i < frames; i++) buf[i] = (buf[i] ?? 0) * busGainLinear;
+    }
+  }
+
   // 总线：限制器（限制器必须挂在总线上，不能只给单轨加）
   let limited = false;
   if (state.job.limiter !== false) {

@@ -43,7 +43,7 @@ wx-audio-studio/
 │   │   └── runner/                   各实验（cases/）· 结果导出 · Worker 客户端
 │   ├── core/                         ★ 平台适配 + 主线程调度（纯计算层在 `workers/render/`，见 ADR-0001）
 │   │   ├── types.ts                  全部数据模型类型（仅类型声明）
-│   │   ├── engine/                   controller.ts（调度与 I/O）· worker-protocol.ts（消息唯一定义处）
+│   │   ├── engine/                   controller.ts（调度与 I/O）· export.ts（导出编排）· export-plan.ts（归一化与体积估算）· worker-protocol.ts（消息唯一定义处）
 │   │   ├── history/                  命令模式撤销栈
 │   │   ├── store/                    工程状态（EDL + 撤销栈 + 自动保存）· 打开/新建/导入工程
 │   │   ├── view/                     viewport.ts（时间轴视口与手势几何，纯计算）

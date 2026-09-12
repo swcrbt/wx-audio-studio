@@ -1,1 +1,78 @@
-<view class="page"></view>
+<view class="page">
+  <view wx:if="{{loading}}" class="hint">正在读取工程…</view>
+  <view wx:elif="{{error}}" class="hint hint-error">{{error}}</view>
+
+  <block wx:else>
+    <!-- 配置 -->
+    <view class="card">
+      <view class="row">
+        <text class="label">格式</text>
+        <text class="value">WAV（无损 16bit）</text>
+      </view>
+      <picker mode="selector" range="{{sampleRateOptions}}" value="{{sampleRateIndex}}" bindchange="handleSampleRateChange">
+        <view class="row">
+          <text class="label">采样率</text>
+          <text class="value">{{sampleRateOptions[sampleRateIndex]}} ›</text>
+        </view>
+      </picker>
+      <picker mode="selector" range="{{channelOptions}}" value="{{channelIndex}}" bindchange="handleChannelChange">
+        <view class="row">
+          <text class="label">声道</text>
+          <text class="value">{{channelOptions[channelIndex]}} ›</text>
+        </view>
+      </picker>
+      <view class="row">
+        <text class="label">归一化到 -1dBFS</text>
+        <switch checked="{{normalize}}" bindchange="handleNormalizeChange" color="#4C8DFF" />
+      </view>
+      <view class="row">
+        <text class="label">限制器（防削波）</text>
+        <switch checked="{{limiter}}" bindchange="handleLimiterChange" color="#4C8DFF" />
+      </view>
+    </view>
+
+    <!-- 预估 -->
+    <view class="card">
+      <view class="row">
+        <text class="label">时长</text>
+        <text class="value">{{durationLabel}}</text>
+      </view>
+      <view class="row">
+        <text class="label">预估体积</text>
+        <text class="value">{{sizeLabel}}</text>
+      </view>
+      <view class="row">
+        <text class="label">峰值 / 归一化</text>
+        <text class="value">{{peakLabel}}</text>
+      </view>
+    </view>
+
+    <view wx:if="{{warnings.length > 0}}" class="warn">
+      <text wx:for="{{warnings}}" wx:key="*this" class="warn-line">{{item}}</text>
+    </view>
+
+    <!-- 导出中 -->
+    <view wx:if="{{exporting}}" class="card">
+      <view class="progress">
+        <view class="bar"><view class="bar-fill" style="width:{{percent}}%"></view></view>
+        <text class="progress-text">{{stageText}} {{percent}}%{{etaLabel}}</text>
+      </view>
+      <view class="btn btn-ghost" bindtap="handleCancel">取消导出</view>
+    </view>
+
+    <!-- 成功态 -->
+    <view wx:elif="{{result}}" class="card">
+      <text class="done-title">导出完成</text>
+      <text class="done-line">{{result.fileName}} · {{result.sizeLabel}} · {{result.durationLabel}}</text>
+      <text class="done-tip">已保存在「我的 → 成品」，可随时发送给朋友</text>
+      <view class="btn btn-primary" bindtap="handleShare">发送给朋友</view>
+      <view wx:if="{{isPc}}" class="btn btn-ghost" bindtap="handleSaveToDisk">保存到电脑</view>
+      <view class="btn btn-ghost" bindtap="handleBackToEditor">返回编辑</view>
+    </view>
+
+    <!-- 默认：导出按钮 -->
+    <view wx:else class="footer">
+      <view class="btn btn-primary {{blocked ? 'btn-disabled' : ''}}" bindtap="handleExport">开始导出</view>
+    </view>
+  </block>
+</view>

@@ -247,7 +247,9 @@ export interface RenderJob {
   output: { sampleRate: number; channels: 1 | 2 };
   range: { startSec: number; endSec: number };   // 支持只渲染选区
   chunkSec: number;                              // 默认 2s（可据性能自适应 1~4s）
-  targetPath: string;                            // 输出 WAV 路径
+  targetPath: string;                            // 输出 WAV 路径（仅主线程用）
+  limiter?: boolean;                             // 总线限制器，默认开
+  busGainDb?: number;                            // 总线归一化增益，默认 0（位于限制器之前）
   onProgress?: (done: number, total: number) => void;
 }
 ```
@@ -419,10 +421,12 @@ gain = 10^((gainDb + makeupDb)/20)
 
 ```
 素材 → 片段增益/淡化 → 片段效果（EQ → 门 → 压缩） → 轨道增益/声像
-     → 轨道效果（EQ → 压缩 → 混响/回声） → 总线（EQ → 限制器） → 编码
+     → 轨道效果（EQ → 压缩 → 混响/回声） → 总线（EQ → 归一化增益 → 限制器） → 编码
 ```
 
-顺序变化会显著影响听感（例如"先压缩后 EQ"与"先 EQ 后压缩"不同）。UI 上以固定管线呈现、用户只调参数，**MVP 不提供自由连线**，避免复杂度和不可预期的结果。
+顺序变化会显著影响听感（例如“先压缩后 EQ”与“先 EQ 后压缩”不同）。UI 上以固定管线呈现、用户只调参数，**MVP 不提供自由连线**，避免复杂度和不可预期的结果。
+
+> 总线上的**归一化增益**位于限制器之前：先把整体拉到目标峰值，再由限制器托住个别峰值，避免归一化之后又重新超限。该增益由主线程在导出前算好（`RenderJob.busGainDb`）。
 
 ## 7. 播放与试听策略
 

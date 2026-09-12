@@ -87,6 +87,13 @@ export async function openProject(
   return { store, issues };
 }
 
+/** 轻量读取工程：只做读盘 + 迁移，不建状态层（导出、统计等只读场景用）。 */
+export async function readProject(projectId: Id): Promise<Project | null> {
+  const raw = await readProjectFile(projectId);
+  if (!raw) return null;
+  return migrateProject(raw);
+}
+
 /** 读取素材的峰值金字塔（每声道一份）。缺失或损坏时返回 `null`，由调用方降级显示。 */
 export async function loadAssetPeaks(assetId: Id): Promise<PeaksLevel[][] | null> {
   try {

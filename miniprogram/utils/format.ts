@@ -44,6 +44,18 @@ export function formatDb(db: number): string {
 }
 
 /**
+ * 时间戳 → `yyyyMMddHHmmss`（可用作文件名片段；不用 `toISOString` 是为了本地时区）。
+ */
+export function formatStamp(timestamp: number): string {
+  const date = new Date(timestamp);
+  const pad = (n: number): string => String(n).padStart(2, '0');
+  return (
+    `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}` +
+    `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`
+  );
+}
+
+/**
  * 时间戳 → 相对时间（列表页用）。
  *
  * @param now 当前时间戳（测试可注入）；不传用 `Date.now()`
