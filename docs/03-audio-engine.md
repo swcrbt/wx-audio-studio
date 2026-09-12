@@ -434,7 +434,9 @@ gain = 10^((gainDb + makeupDb)/20)
 | 效果 A/B 对比 | 渲染两份短预览（干/湿），`BufferSourceNode` 交替播放 | 确定性强于实时链路 |
 | 录音时的监听/电平 | `AnalyserNode` + Canvas 电平表（不做耳返，避免回授） | 简单可靠 |
 
-**缓存失效规则**：任何编辑操作把对应区间的预览标记为脏；播放时若命中脏区间 → 先渲染该区间（约 100～500ms）再播，UI 显示"正在准备…"。
+**缓存失效规则**：任何编辑操作把对应区间的预览标记为脏；播放时若命中脏区间 → 先渲染该区间（约 100～500ms）再播，UI 显示“正在准备…”。
+
+**实现位置**：`core/player/transport.ts`（单例 `InnerAudioContext` 播放通道，中断与倍速）、`core/player/clip-preview.ts`（`BufferSourceNode` 循环试听，只读区间 PCM）、`core/player/preview-cache.ts`（脏区间、窗口计算与渲染调度，渲染函数由调用方注入）。
 
 **必须处理的音频事件**
 - `wx.onAudioInterruptionBegin` → 暂停播放、记录位置，UI 切到暂停态；`onAudioInterruptionEnd` → 恢复（或提示用户手动继续）。

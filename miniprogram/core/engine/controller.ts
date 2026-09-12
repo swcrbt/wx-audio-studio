@@ -11,7 +11,6 @@ import type { MainToWorkerMessage, RenderJob, WorkerToMainMessage } from './work
 import { FsError, describeFsError } from '../fs/errors';
 import { paths } from '../fs/paths';
 import { openWavWriter, readPcmFrames, readWavMeta, unlinkQuiet, type WavWriter } from '../fs/wav-file';
-import { edlDurationSec } from '../../workers/render/edl/query';
 import { logger } from '../../utils/logger';
 
 /** Worker 入口脚本路径（相对 `miniprogramRoot`，**不以 `/` 开头**，官方要求）。 */
@@ -67,7 +66,9 @@ export class RenderController {
     if (!targetPath) throw new Error('渲染任务缺少 targetPath');
 
     try {
-      const estimatedFrames = Math.round(edlDurationSec(job.edl) * job.output.sampleRate);
+      // 只渲染选区时，帧数按选区长度估算（不能按整段 EDL 长度）
+      const rangeSec = Math.max(0, job.range.endSec - job.range.startSec);
+      const estimatedFrames = Math.round(rangeSec * job.output.sampleRate);
       this.writer = await openWavWriter(targetPath, {
         sampleRate: job.output.sampleRate,
         channels: job.output.channels,

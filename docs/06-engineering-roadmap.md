@@ -48,12 +48,12 @@ wx-audio-studio/
 │   │   ├── store/                    工程状态（EDL + 撤销栈 + 自动保存）
 │   │   ├── audio/                    import.ts（导入管线）· record.ts（录音管线）
 │   │   ├── fs/                       paths · io · errors · wav-file · store · quota
-│   │   ├── player/                   播放器封装（InnerAudioContext / WebAudio）
+│   │   ├── player/                   transport · clip-preview · preview-cache
 │   │   └── caps.ts                   基础库与设备能力探测
 │   ├── utils/                        logger · format · throttle · dom 查询助手
 │   └── assets/                       图标、插画（注意主包体积）
 ├── tests/                            Node 端单测与基准（Vitest）
-│   ├── codec/ · dsp/ · edl/ · peaks/ · engine/ · history/ · store/ · audio/
+│   ├── codec/ · dsp/ · edl/ · peaks/ · engine/ · history/ · store/ · player/ · audio/
 │   └── bench/render.bench.ts         DB-12 性能基准（`npm run bench`）
 ├── scripts/
 │   └── mp-preview.mjs                真机预览二维码 / 体验版上传（miniprogram-ci）
