@@ -17,6 +17,7 @@
 
 | 日期 | 文档 | 类型 | 摘要 | 关联代码 |
 | --- | --- | --- | --- | --- |
+| 2026-09-12 | `docs/05` | 修改 | 修正类型内部不一致：`EffectInstance.params` 的值类型由 `number \| string \| boolean` 改为 `EffectParamValue = number \| string \| boolean \| number[]`，否则 `eq10` 的 `bands`（十段增益数组）无法表达（原定义与同一节的参数注释矛盾） | `core/types.ts` `workers/render/edl/validate.ts` |
 | 2026-09-12 | `docs/06` `docs/03` `docs/CHANGELOG` | 结论回填 | **DB-12（纯 JS 性能基准）Node 侧实测回填**：新增 §4 实测参考表（3 分钟音频：峰值构建 26ms、增益 41ms、高通 142ms、限制器 363ms、10 段 EQ 968ms、重采样 391ms、**完整分块渲染 2.07s**）；因实测发现重采样是瓶颈（8.4s），实现改为多相查表（21× 提速）并同步 §6.4 算法描述；DB-12 状态改“Node 侧已回填” | `tests/bench/render.bench.ts` `workers/render/codec/resample.ts` |
 | 2026-09-12 | `AGENTS.md` | 新增 | §2.4 新增“注释只解释代码本身”：禁止用注释叙述设计文档的内容与章节号（唯一例外是算法公式、平台限制的外部出处短指针）；理由：把文档搬进注释会让改动两处维护，且读者在编辑器里看不到最新版文档。同时修正 §2.5 的表述 | 全部代码文件 |
 | 2026-09-12 | `docs/03` `docs/05` | 修改 | 关联代码回填：补上已实现的重采样（`codec/resample.ts`）、撤销栈（`core/history/`）与渲染调度（`core/engine/controller.ts`） | 同名路径 |

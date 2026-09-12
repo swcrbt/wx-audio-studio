@@ -67,7 +67,7 @@ function buildEdl(): Edl {
         solo: false,
         effects: [
           { id: 'e1', type: 'highpass', enabled: true, params: { freq: 120 } },
-          { id: 'e2', type: 'eq10', enabled: true, params: { bands: new Array(10).fill(0) } },
+          { id: 'e2', type: 'eq10', enabled: true, params: { bands: new Array<number>(10).fill(0) } },
         ],
         clips: [
           {

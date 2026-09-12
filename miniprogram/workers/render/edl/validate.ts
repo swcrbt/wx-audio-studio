@@ -13,6 +13,7 @@ import type {
   Clip,
   Edl,
   EffectInstance,
+  EffectParamValue,
   ExportSettings,
   FadeSpec,
   Id,
@@ -74,11 +75,14 @@ function readEffects(value: unknown): EffectInstance[] {
   const out: EffectInstance[] = [];
   value.forEach((item, index) => {
     if (!isRecord(item)) return;
-    const params: Record<string, number | string | boolean> = {};
+    const params: Record<string, EffectParamValue> = {};
     if (isRecord(item.params)) {
       for (const [key, raw] of Object.entries(item.params)) {
         if (typeof raw === 'number' || typeof raw === 'string' || typeof raw === 'boolean') {
           params[key] = raw;
+        } else if (Array.isArray(raw) && raw.every((v) => typeof v === 'number')) {
+          // 多值参数（如 eq10 的 bands）
+          params[key] = raw.filter((v): v is number => typeof v === 'number');
         }
       }
     }

@@ -109,9 +109,15 @@ export interface EffectInstance {
   id: Id;
   type: EffectType;
   enabled: boolean;
-  params: Record<string, number | string | boolean>;
+  params: Record<string, EffectParamValue>;
   presetName?: string;
 }
+
+/**
+ * 效果参数的取值：标量或数值数组。
+ * 数组用于多值参数，如 `eq10` 的 `bands`（10 段增益）。
+ */
+export type EffectParamValue = number | string | boolean | number[];
 
 export type EffectType =
   | 'gain'
