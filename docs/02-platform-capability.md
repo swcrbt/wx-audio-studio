@@ -283,6 +283,7 @@
 ② npm run mp:doctor    # 自检凭据与项目结构（不上传任何东西，也不打印私钥内容）
 ③ npm run mp:preview   # 生成 mp-qrcode.png（默认打开 spikes/index/index）
 ④ 手机微信「扫一扫 → 右上角相册 → 选 mp-qrcode.png」进入实验页
+   （相册里找不到该图片时，先 `cp mp-qrcode.png /sdcard/Pictures/` 让系统媒体库收录）
 ⑤ 逐项运行，点「复制全部结果」，把文本回填到本文件与对应章节（不靠截图）
 ```
 
