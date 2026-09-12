@@ -44,8 +44,9 @@
 | [04-ui-ux.md](./04-ui-ux.md) | 信息架构、页面流程、编辑器线框、波形画布规格、手势映射、状态机、视觉规范 | 前端 / 设计 |
 | [05-data-model.md](./05-data-model.md) | 实体模型、JSON 结构、本地存储布局、容量与清理、撤销重做、自动保存 | 前端开发 |
 | [06-engineering-roadmap.md](./06-engineering-roadmap.md) | 目录结构、工具链、里程碑与验收标准、测试策略、性能预算、合规与审核 | 全员 |
+| [07-m0-verification.md](./07-m0-verification.md) | **M0 真机验证手册**：上机路径、执行顺序、逐项操作、结论回收（通过标准的权威处仍是 02 §5） | 跑验证的人 |
 | [adr/](./adr/) | 架构决策记录（ADR）：一旦定下难改的决策，含候选方案与理由 | 全员 |
-| [CHANGELOG.md](./CHANGELOG.md) | 文档变更记录 + 14 项待回填的 Spike 结论 | 全员 |
+| [CHANGELOG.md](./CHANGELOG.md) | 文档变更记录 + 14 项 Spike 结论的回填状态（DB-12 已回填，其余 13 项待真机） | 全员 |
 | [../AGENTS.md](../AGENTS.md) | **开发规范**：文档先行、分层规则、单位后缀、性能红线、提交与 DoD、合规 | 全员 / agent |
 
 ## 阅读顺序建议
@@ -73,5 +74,5 @@
 - [x] 平台能力调研与硬约束确认（2026-09-12 逐条核对官方文档并回填来源，见 [02 §1.7](./02-platform-capability.md#17-官方来源清单)）
 - [x] 产品范围、技术选型、架构、数据模型、交互方案定稿（本文档集）
 - [x] 纯逻辑层实现：WAV 编解码 / DSP / EDL / 峰值 / 分块渲染引擎，219 项单测（`npm run check`）
-- [ ] **M0 技术验证（13 项）**：实验页已就绪（`miniprogram/spikes/`，`npm run mp:preview` 上真机）；DB-12 已在 Node 侧回填
+- [ ] **M0 技术验证（13 项真机 + DB-12 已完成）**：13 项实验页已就绪（`miniprogram/spikes/`），照 [07 · M0 真机验证手册](./07-m0-verification.md) 执行；推荐走体验版（无需第二块屏幕）
 - [ ] M1 MVP 实现：导入 / 录音 / 播放 / UI / 导出分享

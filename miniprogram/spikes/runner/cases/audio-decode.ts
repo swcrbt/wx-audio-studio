@@ -3,7 +3,7 @@
  */
 import type { SpikeCase, SpikeLine } from '../types';
 import { describeError, extensionOf, formatBytes } from '../types';
-import { buildSineWav, decodeAudio, readFileBuffer, unlink, writeFileBuffer } from '../util';
+import { buildSineWav, decodeAudio, fileSize, readFileBuffer, unlink, writeFileBuffer } from '../util';
 
 const TMP_DIR = () => `${wx.env.USER_DATA_PATH}/spikes`;
 
@@ -168,5 +168,77 @@ export const db03: SpikeCase = {
       void ctx.close();
       await unlink(filePath);
     }
+  },
+};
+
+/**
+ * DB-02：解码内存上限。
+ *
+ * 做法：逐级放大素材再解码，找到"失败的那一级"。
+ * 之所以要真机：`decodeAudioData` 会一次性产出整段 Float32（1 分钟单声道 ≈ 10.6MB），
+ * 上限取决于设备可用内存与平台的解码实现，开发者工具的数据没有参考价值。
+ */
+export const db02: SpikeCase = {
+  id: 'DB-02',
+  title: 'decodeAudioData 的内存上限',
+  criteria: '明确"多大的文件能解码成功"，据此定导入时长上限与降级策略',
+  blocks: '导入（IN-1/IN-4）内存预算（docs/06 §4）',
+  needsDevice: true,
+  async run(log) {
+    await ensureTmpDir();
+    const lines: SpikeLine[] = [];
+    // 逐级放大：1 / 2 / 3 / 5 / 8 分钟单声道 44.1k（解码后约 10.6 / 21.2 / 31.8 / 53 / 84.6MB）
+    // 用单声道是为了控制“生成素材”自身的内存峰值（立体声等价于时长减半，结论里换算）
+    const minutes = [1, 2, 3, 5, 8];
+
+    for (const minute of minutes) {
+      const seconds = minute * 60;
+      const filePath = `${TMP_DIR()}/mem-${minute}min.wav`;
+      let generated = false;
+      try {
+        log(`生成并解码 ${minute} 分钟素材…`);
+        const wav = buildSineWav(seconds, { channels: 1, freq: 440 });
+        await writeFileBuffer(filePath, wav);
+        generated = true;
+
+        const bytes = await fileSize(filePath);
+        const ctx = wx.createWebAudioContext();
+        const started = Date.now();
+        try {
+          const data = await readFileBuffer(filePath);
+          const audio = await decodeAudio(ctx, data);
+          const ms = Date.now() - started;
+          const decodedMb = (audio.length * audio.numberOfChannels * 4) / 1024 / 1024;
+          lines.push({
+            label: `${minute} 分钟`,
+            ok: true,
+            value: `OK ${ms}ms · 文件 ${formatBytes(bytes)} · 解码后约 ${decodedMb.toFixed(1)}MB`,
+          });
+        } finally {
+          void ctx.close();
+        }
+      } catch (error) {
+        lines.push({
+          label: `${minute} 分钟`,
+          ok: false,
+          value: `${generated ? '解码失败' : '生成失败'}：${describeError(error)}`,
+        });
+        await unlink(filePath);
+        // 生成阶段就失败说明内存已经吃紧，后面的级别不必再试
+        break;
+      }
+      await unlink(filePath);
+    }
+
+    const okLines = lines.filter((line) => line.ok === true);
+    const okMinutes = okLines.map((line) => line.label);
+    const conclusion =
+      okLines.length === minutes.length
+        ? `全部 ${minutes.length} 级都成功（最大 ${minutes[minutes.length - 1]} 分钟）：导入 10 分钟上限未触到内存边界`
+        : okMinutes.length === 0
+          ? '第一级就失败，必须把导入上限压到 1 分钟以内并改用分块解码策略'
+          : `成功到 ${okMinutes[okMinutes.length - 1]}，之后失败；立体声等价于时长减半，导入上限（docs/03 §3）应据此收敛`;
+
+    return { id: this.id, title: this.title, env: '', lines, conclusion };
   },
 };

@@ -17,6 +17,7 @@
 
 | 日期 | 文档 | 类型 | 摘要 | 关联代码 |
 | --- | --- | --- | --- | --- |
+| 2026-09-12 | `docs/07`（新建） `docs/02` `docs/README` | 新增 | **新增《M0 真机验证手册》**（第十三份文档）：三条上机路径（含**体验版：无需第二块屏幕**）、前置自检、执行顺序、13 项逐项操作、结论回收与失败处理；`docs/02 §5` 的“怎么跑”改为引用手册（SSOT：通过标准仍在 02），并细化 DB-02 的方法（单声道 1/2/3/5/8 分钟，立体声等价减半）；`docs/README` 文档地图补 07 | `miniprogram/spikes/runner/cases/**` `docs/07-m0-verification.md` |
 | 2026-09-12 | `docs/04` | 新增 | 导出页补试听（P0 的 EX-4）：成功态可播放最终渲染结果，§4.4 落地状态同步 | `pages/export/export.ts` |
 | 2026-09-12 | `docs/04` `docs/06` | 新增 | 参数面板与 BGM 铺满：`docs/04` **§3.5 补 M1 落地状态**（ParamSheet 已接入淡入淡出/片段音量/轨道音量，并列出“包络预览、效果面板”缺口）、§4.3 补 **BGM 轨铺满策略**（为何不用 `clip.loop`）、§7 组件状态更新；`docs/06` §1 目录树补 `store/bgm.ts` | `components/param-sheet/**` `core/store/bgm.ts` |
 | 2026-09-12 | `docs/04` `docs/06` | 新增 | 混音页落地：`docs/04` §4.3 补 M1 实现范围与简化点（跨轨拖动降为末尾追加）、§7 组件落地状态更新；`docs/06` §1 目录树补 `timeline-layout.ts`、`preview-session.ts` 与 tests 子目录 | `pages/mixer/**` `components/{track-row,clip-block}/**` `core/view/timeline-layout.ts` `core/player/preview-session.ts` |
@@ -58,17 +59,19 @@
 
 | 编号 | 结论回填位置 | 状态 |
 | --- | --- | --- |
-| DB-01 | [02 §1.1](./02-platform-capability.md#11-音频解码与处理) | 未验证 |
-| DB-02 | [02 §3](./02-platform-capability.md#3-容量估算与内存约束) | 未验证 |
-| DB-03 | [02 §1.1](./02-platform-capability.md#11-音频解码与处理) | 未验证 |
-| DB-04 | [02 §1.1](./02-platform-capability.md#11-音频解码与处理) | 未验证 |
-| DB-05 | [02 §1.5](./02-platform-capability.md#15-输入选择与多线程) · [03 §5.2](./03-audio-engine.md#52-渲染调度模型) | 未验证 |
-| DB-06 | [03 §5.2](./03-audio-engine.md#52-渲染调度模型) | 未验证 |
-| DB-07 | [03 §5.4](./03-audio-engine.md#54-素材分块缓存) | 未验证 |
-| DB-08 | [02 §1.2](./02-platform-capability.md#12-录音) · [03 §3](./03-audio-engine.md#3-素材导入管线) | 未验证 |
-| DB-09 | [03 §7](./03-audio-engine.md#7-播放与试听策略) | 未验证 |
-| DB-10 | [02 §1.4](./02-platform-capability.md#14-文件系统) | 未验证 |
-| DB-11 | [02 §1.4](./02-platform-capability.md#14-文件系统) | 未验证 |
+| DB-01 | [02 §1.1](./02-platform-capability.md#11-音频解码与处理) | 未验证（实验已就绪） |
+| DB-02 | [02 §3](./02-platform-capability.md#3-容量估算与内存约束) | 未验证（实验已就绪） |
+| DB-03 | [02 §1.1](./02-platform-capability.md#11-音频解码与处理) | 未验证（实验已就绪） |
+| DB-04 | [02 §1.1](./02-platform-capability.md#11-音频解码与处理) | 未验证（实验已就绪） |
+| DB-05 | [02 §1.5](./02-platform-capability.md#15-输入选择与多线程) · [03 §5.2](./03-audio-engine.md#52-渲染调度模型) | 未验证（实验已就绪） |
+| DB-06 | [03 §5.2](./03-audio-engine.md#52-渲染调度模型) | 未验证（实验已就绪） |
+| DB-07 | [03 §5.4](./03-audio-engine.md#54-素材分块缓存) | 未验证（实验已就绪） |
+| DB-08 | [02 §1.2](./02-platform-capability.md#12-录音) · [03 §3](./03-audio-engine.md#3-素材导入管线) | 未验证（实验已就绪） |
+| DB-09 | [03 §7](./03-audio-engine.md#7-播放与试听策略) | 未验证（实验已就绪） |
+| DB-10 | [02 §1.4](./02-platform-capability.md#14-文件系统) | 未验证（实验已就绪） |
+| DB-11 | [02 §1.4](./02-platform-capability.md#14-文件系统) | 未验证（实验已就绪） |
 | DB-12 | [06 §4](./06-engineering-roadmap.md#4-性能与内存预算) | **Node 侧已回填**（2026-09-12，真机复测待做） |
-| DB-13 | [03 §4.3](./03-audio-engine.md#43-绘制时的选择与采样) | 未验证 |
-| DB-14 | [05 §5](./05-data-model.md#5-容量策略) | 未验证 |
+| DB-13 | [03 §4.3](./03-audio-engine.md#43-绘制时的选择与采样) | 未验证（实验已就绪） |
+| DB-14 | [05 §5](./05-data-model.md#5-容量策略) | 未验证（实验已就绪） |
+
+> “实验已就绪”指 `miniprogram/spikes/` 里已有可运行代码（执行步骤见 [07 · M0 真机验证手册](./07-m0-verification.md)）。
