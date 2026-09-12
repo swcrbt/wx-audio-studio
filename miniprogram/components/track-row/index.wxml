@@ -1,1 +1,25 @@
-<view class="placeholder"></view>
+<view class="track {{track.audible ? '' : 'track-silent'}}">
+  <!-- 控制行 -->
+  <view class="track-head">
+    <text class="track-name">{{track.name}}</text>
+    <text class="track-meta">{{gainLabel}} · {{track.clipCount}} 段</text>
+    <view class="track-btns">
+      <view class="tbtn" data-action="gain" catchtap="handleTrackAction">音量</view>
+      <view class="tbtn {{track.muted ? 'tbtn-on' : ''}}" data-action="mute" catchtap="handleTrackAction">静音</view>
+      <view class="tbtn {{track.solo ? 'tbtn-on' : ''}}" data-action="solo" catchtap="handleTrackAction">Solo</view>
+      <view class="tbtn" data-action="remove" catchtap="handleTrackAction">删除</view>
+    </view>
+  </view>
+
+  <!-- 片段泳道 -->
+  <view class="lane" style="width:{{laneWidthPx}}px;">
+    <clip-block
+      wx:for="{{track.clips}}"
+      wx:key="clipId"
+      clip="{{item}}"
+      selected="{{item.clipId === selectedClipId}}"
+      bind:action="handleClipAction"
+    />
+    <view wx:if="{{showPlayhead}}" class="playhead" style="left:{{playheadPx}}px;"></view>
+  </view>
+</view>

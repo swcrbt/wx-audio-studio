@@ -46,16 +46,16 @@ wx-audio-studio/
 │   │   ├── engine/                   controller.ts（调度与 I/O）· export.ts（导出编排）· export-plan.ts（归一化与体积估算）· worker-protocol.ts（消息唯一定义处）
 │   │   ├── history/                  命令模式撤销栈
 │   │   ├── store/                    工程状态（EDL + 撤销栈 + 自动保存）· 打开/新建/导入工程
-│   │   ├── view/                     viewport.ts（时间轴视口与手势几何，纯计算）
+│   │   ├── view/                     viewport.ts（视口与手势几何）· timeline-layout.ts（轨道/片段几何）· rolling-waveform.ts（录音滚动波形）
 │   │   ├── audio/                    import.ts（导入管线）· record.ts（录音管线）
 │   │   ├── fs/                       paths · io · errors · wav-file · store · quota · renders（成品扫描）
-│   │   ├── player/                   transport · clip-preview · preview-cache
+│   │   ├── player/                   transport · clip-preview · preview-cache · preview-session（编辑器与混音页共用）
 │   │   ├── caps.ts                   基础库与设备能力探测
 │   │   └── settings.ts               用户偏好（Storage，不占数据目录配额）
 │   ├── utils/                        logger · format · throttle · dom 查询助手
 │   └── assets/                       图标、插画（注意主包体积）
 ├── tests/                            Node 端单测与基准（Vitest）
-│   ├── codec/ · dsp/ · edl/ · peaks/ · engine/ · history/ · store/ · player/ · audio/
+│   ├── codec/ · dsp/ · edl/ · peaks/ · engine/ · history/ · store/ · player/ · view/ · audio/ · fs/ · core/
 │   └── bench/render.bench.ts         DB-12 性能基准（`npm run bench`）
 ├── scripts/
 │   └── mp-preview.mjs                真机预览二维码 / 体验版上传（miniprogram-ci）

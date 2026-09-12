@@ -1,1 +1,6 @@
-{"component":true}
+{
+  "component": true,
+  "usingComponents": {
+    "clip-block": "../clip-block/index"
+  }
+}

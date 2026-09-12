@@ -1,0 +1,71 @@
+.clip {
+  position: absolute;
+  top: 6rpx;
+  bottom: 6rpx;
+  border-radius: 8rpx;
+  background-color: rgba(76, 141, 255, 0.28);
+  border: 1px solid rgba(76, 141, 255, 0.55);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.clip-selected {
+  border-color: #19c37d;
+  background-color: rgba(25, 195, 125, 0.26);
+}
+
+.clip-muted {
+  background-color: rgba(139, 147, 163, 0.22);
+  border-color: rgba(139, 147, 163, 0.5);
+}
+
+.clip-missing {
+  border-color: #ff7a45;
+  border-style: dashed;
+}
+
+.clip-loop {
+  border-style: double;
+}
+
+.clip-label {
+  position: absolute;
+  left: 10rpx;
+  top: 6rpx;
+  right: 10rpx;
+  font-size: 20rpx;
+  color: #e8ecf4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.clip-badge {
+  position: absolute;
+  left: 10rpx;
+  bottom: 6rpx;
+  font-size: 18rpx;
+  color: #b7bfcd;
+}
+
+.clip-badge-warn {
+  color: #ff7a45;
+}
+
+/* 淡入淡出：斜角标记（左低右高的斜线） */
+.fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.fade-in {
+  left: 0;
+  background: linear-gradient(to top right, rgba(18, 21, 26, 0.65) 0%, rgba(18, 21, 26, 0.65) 49%, transparent 51%);
+}
+
+.fade-out {
+  right: 0;
+  background: linear-gradient(to top left, rgba(18, 21, 26, 0.65) 0%, rgba(18, 21, 26, 0.65) 49%, transparent 51%);
+}

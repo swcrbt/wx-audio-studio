@@ -1,1 +1,55 @@
-<view class="page"></view>
+<view class="page">
+  <!-- 顶部操作 -->
+  <view class="topbar">
+    <text class="title">{{projectName}}</text>
+    <view class="topbar-actions">
+      <view class="chip" bindtap="handleAddTrack">＋ 轨道</view>
+      <view class="chip" bindtap="handleAddClip">＋ 片段</view>
+      <view class="chip chip-primary" bindtap="handleTogglePreview">{{playing ? '⏸ 暂停' : '▶ 预览'}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="hint">正在读取工程…</view>
+  <view wx:elif="{{error}}" class="hint hint-error">{{error}}</view>
+
+  <block wx:else>
+    <view class="meta">
+      <text>{{durationLabel}} · {{pxPerSecondLabel}}</text>
+      <view class="meta-actions">
+        <view class="mini" bindtap="handleZoomOut">−</view>
+        <view class="mini" bindtap="handleZoomIn">＋</view>
+        <view class="mini" bindtap="handleZoomFit">适配</view>
+      </view>
+    </view>
+
+    <scroll-view class="tracks" scroll-x enable-flex scroll-left="{{scrollLeft}}">
+      <view class="tracks-inner" style="width:{{laneWidthPx}}px;">
+        <view
+          wx:for="{{tracks}}"
+          wx:key="trackId"
+          class="track-wrap"
+        >
+          <track-row
+            track="{{item}}"
+            selectedClipId="{{selectedClipId}}"
+            laneWidthPx="{{laneWidthPx}}"
+            playheadPx="{{playheadPx}}"
+            showPlayhead="{{showPlayhead}}"
+            bind:trackaction="handleTrackAction"
+            bind:clipaction="handleClipAction"
+          />
+        </view>
+      </view>
+    </scroll-view>
+
+    <view wx:if="{{tracks.length === 0}}" class="empty">
+      <text class="empty-title">还没有轨道</text>
+      <text class="empty-desc">先添加一条轨道，再把素材放进去拼接</text>
+    </view>
+
+    <view class="footer">
+      <view class="btn btn-ghost" bindtap="handleOpenEditor">回到编辑器</view>
+      <view class="btn btn-primary" bindtap="handleExport">导出</view>
+    </view>
+  </block>
+</view>

@@ -1,3 +1,10 @@
 {
-  "navigationBarTitleText": "mixer"
+  "navigationBarTitleText": "混音",
+  "navigationBarBackgroundColor": "#12151A",
+  "navigationBarTextStyle": "white",
+  "backgroundColor": "#12151A",
+  "disableScroll": true,
+  "usingComponents": {
+    "track-row": "../../components/track-row/index"
+  }
 }

@@ -1,0 +1,69 @@
+.track {
+  margin-bottom: 16rpx;
+  padding: 12rpx 0 16rpx;
+  border-radius: 16rpx;
+  background-color: #1c2029;
+}
+
+.track-silent {
+  opacity: 0.55;
+}
+
+.track-head {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 0 20rpx 12rpx;
+}
+
+.track-name {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #ffffff;
+  max-width: 30%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.track-meta {
+  flex: 1;
+  font-size: 20rpx;
+  color: #8b93a3;
+  font-variant-numeric: tabular-nums;
+}
+
+.track-btns {
+  display: flex;
+  gap: 10rpx;
+}
+
+.tbtn {
+  padding: 8rpx 18rpx;
+  border-radius: 999rpx;
+  background-color: #262b36;
+  color: #c6ccd8;
+  font-size: 22rpx;
+}
+
+.tbtn-on {
+  background-color: #4c8dff;
+  color: #ffffff;
+}
+
+.lane {
+  position: relative;
+  height: 72rpx;
+  margin: 0 20rpx;
+  border-radius: 8rpx;
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2rpx;
+  background-color: #ff4d4f;
+  pointer-events: none;
+}

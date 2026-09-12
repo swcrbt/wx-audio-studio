@@ -1,1 +1,13 @@
-<view class="placeholder"></view>
+<view
+  class="clip {{clip.muted ? 'clip-muted' : ''}} {{clip.assetPresent ? '' : 'clip-missing'}} {{selected ? 'clip-selected' : ''}} {{clip.isLoop ? 'clip-loop' : ''}}"
+  style="left:{{clip.leftPx}}px;width:{{clip.widthPx}}px;"
+  catchtap="handleTap"
+  catchlongpress="handleLongPress"
+>
+  <view wx:if="{{clip.fadeInPx > 0}}" class="fade fade-in" style="width:{{clip.fadeInPx}}px;"></view>
+  <view wx:if="{{clip.fadeOutPx > 0}}" class="fade fade-out" style="width:{{clip.fadeOutPx}}px;"></view>
+
+  <text class="clip-label">{{clip.label}}</text>
+  <text wx:if="{{clip.muted}}" class="clip-badge">静音</text>
+  <text wx:elif="{{!clip.assetPresent}}" class="clip-badge clip-badge-warn">素材缺失</text>
+</view>

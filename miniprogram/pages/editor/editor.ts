@@ -10,12 +10,10 @@
  * 峰值与 EDL 不能进 `data`。
  */
 import type { Id, Px, Seconds, TimeRange } from '../../core/types';
-import { PreviewCache, PreviewEmptyError } from '../../core/player/preview-cache';
-import { Transport } from '../../core/player/transport';
+import { PreviewSession } from '../../core/player/preview-session';
 import { ProjectStore, ProjectStoreError } from '../../core/store/project-store';
 import { loadAssetPeaks, openProject, ProjectLoadError } from '../../core/store/load-project';
-import { RenderController } from '../../core/engine/controller';
-import { paths } from '../../core/fs/paths';
+import { createId, paths } from '../../core/fs/paths';
 import {
   MAX_PX_PER_SECOND,
   MIN_PX_PER_SECOND,
@@ -28,10 +26,8 @@ import {
 } from '../../core/view/viewport';
 import { deleteRange, setClipFade, setClipGainDb, splitClipAt, trimToRange } from '../../workers/render/edl/ops';
 import { MIN_GAIN_DB } from '../../workers/render/constants';
-import { DEFAULT_RENDER_CHUNK_SEC } from '../../workers/render/constants';
 import { edlDurationSec } from '../../workers/render/edl/query';
 import type { PeaksLevel } from '../../workers/render/peaks/build';
-import { createId } from '../../core/fs/paths';
 import { readSettings } from '../../core/settings';
 import { formatDuration, formatDurationShort } from '../../utils/format';
 import { logger } from '../../utils/logger';
@@ -71,10 +67,7 @@ interface EditorState {
   selection: TimeRange | null;
   playheadSec: Seconds;
   widthPx: Px;
-  transport: Transport | null;
-  preview: PreviewCache | null;
-  /** 当前预览文件覆盖的窗口起点（把播放位置换算成工程时间）。 */
-  windowStartSec: Seconds;
+  session: PreviewSession | null;
   /// 焦点片段/素材（M1 单素材视图）
   focusTrackId: Id | null;
   focusClipId: Id | null;
@@ -95,9 +88,7 @@ function stateOf(instance: object): EditorState {
       selection: null,
       playheadSec: 0,
       widthPx: 360,
-      transport: null,
-      preview: null,
-      windowStartSec: 0,
+      session: null,
       focusTrackId: null,
       focusClipId: null,
       focusAssetPath: null,
@@ -183,13 +174,13 @@ Page({
 
   onHide() {
     const state = stateOf(this);
-    state.transport?.pause();
+    state.session?.pause();
     void state.store?.flush();
   },
 
   onUnload() {
     const state = stateOf(this);
-    state.transport?.destroy();
+    state.session?.destroy();
     state.unsubscribe?.();
     state.store?.dispose();
   },
@@ -240,21 +231,16 @@ Page({
 
   async handleTogglePlay() {
     const state = stateOf(this);
-    if (!state.transport || !state.preview) return;
+    const session = state.session;
+    if (!session) return;
 
     if (this.data.playing) {
-      state.transport.pause();
+      session.pause();
       this.setData({ playing: false });
       return;
     }
-
-    await preparePreview(this);
-    const transport = state.transport;
-    if (!transport) return;
-    transport.play({
-      fromSec: Math.max(0, state.playheadSec - state.windowStartSec),
-      rate: state.rate,
-    });
+    await session.play(state.playheadSec);
+    session.setRate(state.rate);
   },
 
   handleSeekStart() {
@@ -273,7 +259,7 @@ Page({
     const index = candidates.indexOf(state.rate);
     const next = candidates[(index + 1) % candidates.length] ?? 1;
     state.rate = next;
-    state.transport?.setRate(next);
+    state.session?.setRate(next);
     this.setData({ rateLabel: `${next.toFixed(2)}×` });
   },
 
@@ -418,8 +404,7 @@ async function loadEditor(page: WechatMiniprogram.Page.TrivialInstance, projectI
       }
     }
 
-    state.transport = createTransport(page);
-    state.preview = createPreview(projectId, store);
+    state.session = createSession(page, projectId, store);
     refreshTicks(page);
     refreshSelectionLabel(page);
 
@@ -443,89 +428,36 @@ function pushPeaks(page: WechatMiniprogram.Page.TrivialInstance): void {
   canvas.setDuration(page.data.durationSec);
 }
 
-function createTransport(page: WechatMiniprogram.Page.TrivialInstance): Transport {
+function createSession(
+  page: WechatMiniprogram.Page.TrivialInstance,
+  projectId: Id,
+  store: ProjectStore,
+): PreviewSession {
   const state = stateOf(page);
-  return new Transport({
-    onStateChange: (transportState) => {
-      page.setData({ playing: transportState === 'playing' });
-    },
-    onPosition: (positionSec) => {
-      const absoluteSec = state.windowStartSec + positionSec;
+  return new PreviewSession({
+    projectId,
+    previewPath: paths.preview(projectId),
+    getEdl: () => store.edl,
+    output: { sampleRate: store.project.sampleRate, channels: store.project.channels },
+    onPreparingChange: (preparing) => page.setData({ preparing }),
+    onPosition: (absoluteSec) => {
       state.playheadSec = absoluteSec;
       page.setData({ positionLabel: formatDuration(absoluteSec) });
       waveCanvas(page)?.setPlayhead(absoluteSec);
     },
-    onEnded: () => {
-      page.setData({ playing: false });
-    },
-    onError: (error) => {
-      wx.showToast({ title: error.message, icon: 'none' });
-    },
+    onStateChange: (transportState) => page.setData({ playing: transportState === "playing" }),
+    onEnded: () => page.setData({ playing: false }),
+    onError: (error) => wx.showToast({ title: error.message, icon: "none" }),
   });
 }
 
-/** 预览缓存：渲染函数包一层 `RenderController`（Worker 分块渲染到预览文件）。 */
-function createPreview(projectId: Id, store: ProjectStore): PreviewCache {
-  return new PreviewCache({
-    projectId,
-    previewPath: paths.preview(projectId),
-    durationSec: () => edlDurationSec(store.edl),
-    render: async (window) => {
-      const controller = new RenderController({
-        job: {
-          projectId,
-          edl: store.edl,
-          output: { sampleRate: store.project.sampleRate, channels: store.project.channels },
-          range: { startSec: window.startSec, endSec: window.endSec },
-          chunkSec: DEFAULT_RENDER_CHUNK_SEC,
-          targetPath: paths.preview(projectId),
-        },
-      });
-      const result = await controller.start();
-      return { filePath: result.filePath, bytes: result.bytes, frames: result.frames };
-    },
-  });
-}
-
-/** 确保预览窗口就绪（命中缓存则秒回，命中脏区间则先渲染）。 */
-async function preparePreview(page: WechatMiniprogram.Page.TrivialInstance): Promise<void> {
-  const state = stateOf(page);
-  const preview = state.preview;
-  const transport = state.transport;
-  if (!preview || !transport) return;
-
-  page.setData({ preparing: true });
-  try {
-    const info = await preview.ensure(state.playheadSec);
-    state.windowStartSec = info.window.startSec;
-    transport.load(info.filePath);
-  } catch (error) {
-    if (error instanceof PreviewEmptyError) {
-      wx.showToast({ title: error.message, icon: 'none' });
-    } else {
-      logger.warn('editor', 'preview render failed', error);
-      wx.showToast({ title: '预览生成失败，请重试', icon: 'none' });
-    }
-    throw error;
-  } finally {
-    page.setData({ preparing: false });
-  }
-}
-
-/** seek：先让预览窗口覆盖目标位置，再定位播放器。 */
+/** seek：先更新播放头，再尝试在当前预览窗口内定位（窗口外等下次播放重渲染）。 */
 function seekTo(page: WechatMiniprogram.Page.TrivialInstance, sec: Seconds): void {
   const state = stateOf(page);
   state.playheadSec = Math.min(Math.max(0, sec), page.data.durationSec);
   page.setData({ positionLabel: formatDuration(state.playheadSec) });
-
-  const canvas = waveCanvas(page);
-  canvas?.setPlayhead(state.playheadSec);
-
-  const transport = state.transport;
-  if (!transport?.filePath) return;
-  // 预览文件只覆盖一个窗口：目标在窗口内才直接 seek，否则等下次播放时重渲染
-  const relativeSec = state.playheadSec - state.windowStartSec;
-  if (relativeSec >= 0 && relativeSec <= transport.durationSec) transport.seek(relativeSec);
+  waveCanvas(page)?.setPlayhead(state.playheadSec);
+  state.session?.seek(state.playheadSec);
 }
 
 /** 提交一次 EDL 变更（正/逆操作都用快照引用：EDL 是不可变替换，旧对象仍完整）。 */
@@ -556,9 +488,7 @@ function afterEdit(page: WechatMiniprogram.Page.TrivialInstance, label: string):
 
   state.selection = null;
   state.playheadSec = Math.min(state.playheadSec, durationSec);
-  state.preview?.markAllDirty();
-  state.windowStartSec = 0;
-  state.transport?.stop();
+  state.session?.markDirty();
 
   page.setData({ durationSec, durationLabel: formatDuration(durationSec), playing: false });
   applySelection(page);
