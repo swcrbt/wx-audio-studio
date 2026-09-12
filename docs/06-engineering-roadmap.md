@@ -33,7 +33,6 @@ wx-audio-studio/
 │   │   └── render/                   Worker 入口 + 渲染所需的全部纯计算代码
 │   │       ├── index.ts              Worker 入口（onMessage → 分块渲染 → 回传）
 │   │       ├── render.ts             ★ 分块渲染（EDL 求值 + 混音，纯计算）
-│   │       ├── protocol.ts           跨线程消息类型（仅类型定义）
 │   │       ├── codec/
 │   │       │   ├── wav.ts            WAV 头读写、Float↔Int16
 │   │       │   ├── resample.ts

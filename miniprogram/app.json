@@ -1,0 +1,33 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/record/record",
+    "pages/editor/editor",
+    "pages/mixer/mixer",
+    "pages/export/export",
+    "pages/mine/mine",
+    "pages/settings/settings"
+  ],
+  "workers": "workers",
+  "window": {
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#14161a",
+    "navigationBarTitleText": "音频工坊",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#0f1115"
+  },
+  "tabBar": {
+    "color": "#8a8f98",
+    "selectedColor": "#4c9aff",
+    "backgroundColor": "#14161a",
+    "borderStyle": "black",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "项目" },
+      { "pagePath": "pages/record/record", "text": "录音" },
+      { "pagePath": "pages/mine/mine", "text": "我的" }
+    ]
+  },
+  "lazyCodeLoading": "requiredComponents",
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

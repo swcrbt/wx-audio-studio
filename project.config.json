@@ -1,0 +1,26 @@
+{
+  "description": "wx-audio-studio 微信小程序音频编辑器",
+  "miniprogramRoot": "miniprogram/",
+  "compileType": "miniprogram",
+  "libVersion": "2.30.0",
+  "appid": "touristappid",
+  "projectname": "wx-audio-studio",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "urlCheck": false,
+    "coverView": true,
+    "lazyloadPlaceholderEnable": false,
+    "preloadBackgroundData": false,
+    "autoAudits": false,
+    "useCompilerPlugins": ["typescript"],
+    "ignoreUploadUnusedFiles": true
+  },
+  "condition": {
+    "miniprogram": {
+      "list": []
+    }
+  }
+}
