@@ -1,3 +1,70 @@
 .page {
+  min-height: 100vh;
   padding: 24rpx;
+  box-sizing: border-box;
+  background-color: #f5f6f8;
+}
+
+.section-title {
+  margin: 24rpx 8rpx 12rpx;
+  font-size: 26rpx;
+  color: #8b93a3;
+}
+
+.card {
+  margin-bottom: 8rpx;
+  padding: 8rpx 24rpx;
+  border-radius: 16rpx;
+  background-color: #ffffff;
+}
+
+.card-plain {
+  margin-top: 24rpx;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 96rpx;
+  border-bottom: 1rpx solid #f0f1f4;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.label {
+  font-size: 28rpx;
+  color: #2b3140;
+}
+
+.label-danger {
+  color: #cf1322;
+}
+
+.desc {
+  font-size: 22rpx;
+  color: #8b93a3;
+}
+
+.value {
+  font-size: 26rpx;
+  color: #6b7385;
+  max-width: 45%;
+  text-align: right;
+}
+
+.footnote {
+  display: block;
+  margin: 32rpx 8rpx;
+  font-size: 22rpx;
+  line-height: 34rpx;
+  color: #8b93a3;
 }

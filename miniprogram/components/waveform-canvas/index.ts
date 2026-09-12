@@ -73,6 +73,8 @@ interface WaveformState {
   session: DragSession | null;
   pinch: PinchState | null;
   lastPaintAtMs: number;
+  perfMode: string;
+  haptic: boolean;
 }
 
 /** 每帧最小间隔：低端机上限制在约 30fps。 */
@@ -101,7 +103,14 @@ function createState(): WaveformState {
     session: null,
     pinch: null,
     lastPaintAtMs: 0,
+    perfMode: 'auto',
+    haptic: true,
   };
+}
+
+/** 缩放重绘的限帧间隔：低性能模式放宽到 20fps。 */
+function paintThrottleMs(state: WaveformState): number {
+  return state.perfMode === 'low' ? 50 : PAINT_THROTTLE_MS;
 }
 
 function stateOf(instance: object): WaveformState {
@@ -220,7 +229,7 @@ function updatePinch(state: WaveformState, distancePx: Px, midXPx: Px): void {
   state.viewport = panBy(zoomed, midXPx - pinch.startMidXPx, state.durationSec, state.widthPx);
 
   const nowMs = Date.now();
-  if (nowMs - state.lastPaintAtMs < PAINT_THROTTLE_MS) return;
+  if (nowMs - state.lastPaintAtMs < paintThrottleMs(state)) return;
   state.lastPaintAtMs = nowMs;
   // 缩放改变了像素密度，位图无法复用，只能重绘；用限帧 + 隔列降级控制开销
   // （取舍与豁免记录见 docs/06 §4）
@@ -233,6 +242,10 @@ Component({
     durationSec: { type: Number, value: 0 },
     /** 工程采样率：秒与采样帧的换算基准。 */
     sampleRate: { type: Number, value: 44100 },
+    /** 性能模式：`low` 把波形重绘限制到约 20fps，其余 30fps。 */
+    perfMode: { type: String, value: 'auto' },
+    /** 精细调节时是否震动反馈。 */
+    haptic: { type: Boolean, value: true },
   },
 
   lifetimes: {
@@ -270,6 +283,13 @@ Component({
       state.durationSec = Math.max(0, durationSec);
       state.viewport = clampViewport(state.viewport, state.durationSec, state.widthPx);
       paintFull(state);
+    },
+
+    /** 应用用户偏好（性能模式与震动）；偏好变更后由页面再次调用。 */
+    applyPreferences(options: { perfMode?: string; haptic?: boolean }): void {
+      const state = stateOf(this);
+      if (options.perfMode) state.perfMode = options.perfMode;
+      if (options.haptic !== undefined) state.haptic = options.haptic;
     },
 
     getViewport(): Viewport {
@@ -363,7 +383,7 @@ Component({
       // 视口未变：复用离屏位图，只重画叠加层
       blit(state, 0);
 
-      if (fine && Math.abs(state.playheadSec - previousPlayheadSec) >= FINE_STEP_SEC) {
+      if (fine && state.haptic && Math.abs(state.playheadSec - previousPlayheadSec) >= FINE_STEP_SEC) {
         wx.vibrateShort({ type: 'light' });
       }
     },

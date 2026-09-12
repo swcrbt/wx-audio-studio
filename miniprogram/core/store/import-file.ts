@@ -58,8 +58,16 @@ export async function importFileIntoProject(
  *
  * 传入的是已经生成好的 `Asset`（录音管线已写好 WAV 与峰值），这里只负责登记与挂载。
  */
-export async function createProjectWithAsset(asset: Asset, options: { name: string }): Promise<Project> {
-  const project = await createProject({ name: options.name, withDefaultTrack: true });
+export async function createProjectWithAsset(
+  asset: Asset,
+  options: { name: string; sampleRate?: Project['sampleRate']; channels?: Project['channels'] },
+): Promise<Project> {
+  const project = await createProject({
+    name: options.name,
+    withDefaultTrack: true,
+    ...(options.sampleRate ? { sampleRate: options.sampleRate } : {}),
+    ...(options.channels ? { channels: options.channels } : {}),
+  });
   const store = new ProjectStore({ project, persist: createFsProjectPersist() });
 
   commitAddAsset(store, asset, { label: '录音' });

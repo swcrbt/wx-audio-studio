@@ -130,8 +130,9 @@ export function floatToInt16(src: Float32Array, dst: Int16Array, offset = 0): vo
 
 | 项 | 设计 |
 | --- | --- |
-| 参数 | `format: 'PCM'`、`sampleRate: 44100`、`numberOfChannels: 1`（人声场景，省内存）、`frameSize: 64` |
-| 编码码率 | `encodeBitRate: 96000` —— 必须落在对应采样率的合法区间内（44.1k → 64000～320000），配错会直接录音失败（见 [02 §1.2](./02-platform-capability.md#12-录音)） |
+| 参数 | `format: 'PCM'`、`numberOfChannels: 1`（人声场景，省内存）、`frameSize: 64` |
+| 采样率 | 默认 **44100**，可在设置页改为 22050 / 16000。录音采样率**必须与工程采样率一致**（素材中间格式不允许混采样率），因此它同时决定新建工程的采样率（`core/settings.ts` 的 `defaultSampleRate`）。 |
+| 编码码率 | 按采样率查表取固定值：16000 → 48000、22050 → 64000、44100 → 96000，均落在官方允许区间内，配错会直接录音失败（映射表见 [02 §1.2](./02-platform-capability.md#12-录音)） |
 | 分帧落盘 | `onFrameRecorded` 的帧按序追加写入 `assets/{id}.wav` 的 data 区；先写占位头，`onStop` 时回填 `RIFF.chunkSize` 与 `data.dataSize`（写法见 [§2](#44-字节头写法参考实现)） |
 | 帧序校验 | 累计字节数必须等于 `帧数 × 帧字节数`；落盘后校验 WAV 时长误差 < 50ms，异常提示重录 |
 | 暂停 | `pause/resume` 期间不产生帧，时间轴不出现空隙 |

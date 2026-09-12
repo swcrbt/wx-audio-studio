@@ -17,6 +17,7 @@
 
 | 日期 | 文档 | 类型 | 摘要 | 关联代码 |
 | --- | --- | --- | --- | --- |
+| 2026-09-12 | `docs/02` `docs/03` `docs/04` | 新增 | 设置页与参数化录音采样率：`docs/02 §1.2` 补**官方采样率↔码率完整匹配表**（来源 S5，并修正核对结论表中本项目取值）；删去 §1.2/§1.3 重复的“社区反馈”段（SSOT）；`docs/03 §3` 录音参数表改为“采样率可配置且必须与工程一致”；`docs/04 §4.5` 设置项措辞修正并补落地状态 | `core/settings.ts` `core/audio/record.ts` `pages/settings/**` |
 | 2026-09-12 | `docs/03` `docs/04` `docs/05` `docs/06` | 新增 | “我的”页与导出后处理：`docs/03` **新增 §5.5 导出后处理**（为何变采样率/声道必须在渲染后做、内存与临时文件策略）；`docs/04` §4.5 补 M1 落地状态；`docs/05` §4 说明用户偏好存 Storage 不占数据目录配额；`docs/06` §1 目录树补 `fs/renders.ts` 与 `settings.ts` | `core/engine/export-resample.ts` `core/fs/renders.ts` `core/settings.ts` `pages/mine/**` |
 | 2026-09-12 | `docs/03` `docs/04` `docs/06` | 新增 | 导出层落地：`docs/03` §6.6 效果链把总线写为“EQ → 归一化增益 → 限制器”并说明顺序理由、§8 的 `RenderJob` 补 `limiter` / `busGainDb`；`docs/04` §4.4 补导出页 M1 落地状态；`docs/06` §1 目录树补 `engine/export*.ts` | `core/engine/{export,export-plan}.ts` `pages/export/**` |
 | 2026-09-12 | `docs/02` `docs/03` `docs/06` | 修正 | **平台事实修正**：`WebAudioContext` 不提供麦克风输入节点，`AnalyserNode` 拿不到录音流 → `docs/02 §1.2` 新增“实时电平/波形”行与来源 **S21**（§1 与 §1.7 的编号范围同步改为 S1～S21）；`docs/03 §7` 录音监听方案改为“从 `onFrameRecorded` 分帧计算峰值/RMS”；`docs/06 §1` 目录树补 `view/rolling-waveform.ts` | `core/view/rolling-waveform.ts` `pages/record/record.ts` |

@@ -11,13 +11,13 @@ import { logger } from '../utils/logger';
 export type PerformanceMode = 'auto' | 'high' | 'low';
 
 export interface AppSettings {
+  /** 新建工程与录音的采样率（决定素材中间格式，工程打开后不可更改）。 */
+  defaultSampleRate: 16000 | 22050 | 44100;
   /** 默认导出采样率。 */
   defaultExportSampleRate: 16000 | 22050 | 44100;
-  /** 默认录音采样率（PC 不支持设置，仅记录用户期望）。 */
-  defaultRecordSampleRate: 16000 | 22050 | 44100;
   /** 默认导出声道数。 */
   defaultExportChannels: 1 | 2;
-  /** 性能模式：影响限帧与波形降级策略。 */
+  /** 性能模式：影响波形绘制的限帧与降级策略。 */
   performanceMode: PerformanceMode;
   /** 精细调节时是否震动反馈。 */
   hapticEnabled: boolean;
@@ -26,8 +26,8 @@ export interface AppSettings {
 const STORAGE_KEY = 'wx-audio-studio:settings';
 
 export const DEFAULT_SETTINGS: AppSettings = {
+  defaultSampleRate: 44100,
   defaultExportSampleRate: 44100,
-  defaultRecordSampleRate: 44100,
   defaultExportChannels: 1,
   performanceMode: 'auto',
   hapticEnabled: true,
@@ -42,28 +42,33 @@ function pickSampleRate(value: unknown, fallback: 16000 | 22050 | 44100): 16000 
     : fallback;
 }
 
-/** 读取偏好；未知字段忽略、非法值回落默认（前向兼容）。 */
+/**
+ * 把存储里的原始值解析成合法偏好（纯函数，便于单测）。
+ *
+ * 未知字段忽略、非法值回落默认：旧版本写入的偏好不能把新版本页面搞崩。
+ */
+export function parseSettings(raw: unknown): AppSettings {
+  if (typeof raw !== 'object' || raw === null) return { ...DEFAULT_SETTINGS };
+  const record = raw as Record<string, unknown>;
+
+  return {
+    defaultSampleRate: pickSampleRate(record.defaultSampleRate, DEFAULT_SETTINGS.defaultSampleRate),
+    defaultExportSampleRate: pickSampleRate(
+      record.defaultExportSampleRate,
+      DEFAULT_SETTINGS.defaultExportSampleRate,
+    ),
+    defaultExportChannels: record.defaultExportChannels === 2 ? 2 : 1,
+    performanceMode: PERFORMANCE_MODES.includes(record.performanceMode as PerformanceMode)
+      ? (record.performanceMode as PerformanceMode)
+      : DEFAULT_SETTINGS.performanceMode,
+    hapticEnabled: record.hapticEnabled !== false,
+  };
+}
+
+/** 读取偏好；任何异常都回落默认值。 */
 export function readSettings(): AppSettings {
   try {
-    const raw = wx.getStorageSync(STORAGE_KEY) as unknown;
-    if (typeof raw !== 'object' || raw === null) return { ...DEFAULT_SETTINGS };
-    const record = raw as Record<string, unknown>;
-
-    return {
-      defaultExportSampleRate: pickSampleRate(
-        record.defaultExportSampleRate,
-        DEFAULT_SETTINGS.defaultExportSampleRate,
-      ),
-      defaultRecordSampleRate: pickSampleRate(
-        record.defaultRecordSampleRate,
-        DEFAULT_SETTINGS.defaultRecordSampleRate,
-      ),
-      defaultExportChannels: record.defaultExportChannels === 2 ? 2 : 1,
-      performanceMode: PERFORMANCE_MODES.includes(record.performanceMode as PerformanceMode)
-        ? (record.performanceMode as PerformanceMode)
-        : DEFAULT_SETTINGS.performanceMode,
-      hapticEnabled: record.hapticEnabled !== false,
-    };
+    return parseSettings(wx.getStorageSync(STORAGE_KEY) as unknown);
   } catch (error) {
     // 读偏好失败不能让页面打不开
     logger.warn('settings', 'read failed, fallback to defaults', error);

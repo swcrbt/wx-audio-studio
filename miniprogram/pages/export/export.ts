@@ -13,6 +13,7 @@ import type { PeaksLevel } from '../../workers/render/peaks/build';
 import { ExportTask, ExportError, type ExportProgress, type ExportResult } from '../../core/engine/export';
 import { NORMALIZE_TARGET_DB, planExport, type ExportPlan } from '../../core/engine/export-plan';
 import { loadAssetPeaks, readProject } from '../../core/store/load-project';
+import { readSettings } from '../../core/settings';
 import { formatBytes, formatDuration, formatStamp } from '../../utils/format';
 import { logger } from '../../utils/logger';
 
@@ -85,10 +86,12 @@ Page({
       }
 
       const platform = wx.getDeviceInfo().platform;
+      const settings = readSettings();
       this.setData({
         loading: false,
-        channelIndex: project.channels === 2 ? 1 : 0,
-        sampleRateIndex: Math.max(0, SAMPLE_RATE_VALUES.indexOf(project.sampleRate)),
+        // 初始值取用户偏好，而非工程采样率（导出允许与工程不同）
+        channelIndex: settings.defaultExportChannels === 2 ? 1 : 0,
+        sampleRateIndex: Math.max(0, SAMPLE_RATE_VALUES.indexOf(settings.defaultExportSampleRate)),
         isPc: platform === 'windows' || platform === 'mac',
       });
       wx.setNavigationBarTitle({ title: `导出 · ${project.name}` });

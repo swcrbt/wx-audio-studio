@@ -1,1 +1,63 @@
-<view class="page"></view>
+<view class="page">
+  <view class="section-title">音频</view>
+  <view class="card">
+    <picker mode="selector" range="{{sampleRateOptions}}" value="{{sampleRateIndex}}" bindchange="handleSampleRateChange">
+      <view class="row">
+        <view class="row-main">
+          <text class="label">录音与新建工程采样率</text>
+          <text class="desc">决定素材格式，工程创建后不可更改</text>
+        </view>
+        <text class="value">{{sampleRateOptions[sampleRateIndex]}}</text>
+      </view>
+    </picker>
+  </view>
+
+  <view class="section-title">导出默认值</view>
+  <view class="card">
+    <picker mode="selector" range="{{sampleRateOptions}}" value="{{exportSampleRateIndex}}" bindchange="handleExportSampleRateChange">
+      <view class="row">
+        <text class="label">采样率</text>
+        <text class="value">{{sampleRateOptions[exportSampleRateIndex]}}</text>
+      </view>
+    </picker>
+    <picker mode="selector" range="{{channelOptions}}" value="{{exportChannelIndex}}" bindchange="handleExportChannelChange">
+      <view class="row">
+        <text class="label">声道</text>
+        <text class="value">{{channelOptions[exportChannelIndex]}}</text>
+      </view>
+    </picker>
+  </view>
+
+  <view class="section-title">交互</view>
+  <view class="card">
+    <picker mode="selector" range="{{performanceOptions}}" value="{{performanceIndex}}" bindchange="handlePerformanceChange">
+      <view class="row">
+        <view class="row-main">
+          <text class="label">性能模式</text>
+          <text class="desc">低性能模式降低波形重绘帧率，卡顿时可切换</text>
+        </view>
+        <text class="value">{{performanceOptions[performanceIndex]}}</text>
+      </view>
+    </picker>
+    <view class="row">
+      <text class="label">精细调节震动反馈</text>
+      <switch checked="{{hapticEnabled}}" bindchange="handleHapticChange" color="#4C8DFF" />
+    </view>
+  </view>
+
+  <view class="section-title">存储</view>
+  <view class="card">
+    <view class="row row-tap" bindtap="handleCleanCache">
+      <text class="label">清空缓存</text>
+      <text class="value">临时文件与过期预览 ›</text>
+    </view>
+  </view>
+
+  <view class="card card-plain">
+    <view class="row row-tap" bindtap="handleReset">
+      <text class="label label-danger">恢复默认设置</text>
+    </view>
+  </view>
+
+  <text class="footnote">音频只在这台手机上处理与保存，不会上传。</text>
+</view>

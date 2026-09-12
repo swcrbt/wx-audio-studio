@@ -32,6 +32,7 @@ import { DEFAULT_RENDER_CHUNK_SEC } from '../../workers/render/constants';
 import { edlDurationSec } from '../../workers/render/edl/query';
 import type { PeaksLevel } from '../../workers/render/peaks/build';
 import { createId } from '../../core/fs/paths';
+import { readSettings } from '../../core/settings';
 import { formatDuration, formatDurationShort } from '../../utils/format';
 import { logger } from '../../utils/logger';
 
@@ -42,6 +43,7 @@ interface WaveCanvasApi {
   setViewport(viewport: Viewport): void;
   setSelection(selection: TimeRange | null): void;
   setPlayhead(sec: Seconds): void;
+  applyPreferences(options: { perfMode?: string; haptic?: boolean }): void;
 }
 
 function waveCanvas(page: WechatMiniprogram.Page.TrivialInstance): WaveCanvasApi | null {
@@ -151,6 +153,15 @@ Page({
       return;
     }
     await loadEditor(this, projectId);
+  },
+
+  onShow() {
+    // 偏好可能在设置页改过，回前台时重新套用
+    const settings = readSettings();
+    waveCanvas(this)?.applyPreferences({
+      perfMode: settings.performanceMode,
+      haptic: settings.hapticEnabled,
+    });
   },
 
   onReady() {

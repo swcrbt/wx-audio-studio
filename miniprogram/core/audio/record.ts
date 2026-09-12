@@ -23,8 +23,27 @@ import { detectCaps } from '../caps';
 /** 人声录音默认参数（单声道省内存，44.1k 与主流素材一致）。 */
 export const RECORD_SAMPLE_RATE = 44100;
 export const RECORD_CHANNELS = 1;
-/** 录音码率必须落在采样率对应的合法区间内（44.1k → 64000~320000）。 */
-export const RECORD_ENCODE_BIT_RATE = 96000;
+/** 本项目支持的录音采样率（与工程采样率取值一致，避免导入后再重采样）。 */
+export const RECORD_SAMPLE_RATES = [16000, 22050, 44100] as const;
+export type RecordSampleRate = (typeof RECORD_SAMPLE_RATES)[number];
+
+/**
+ * 采样率 → 码率（官方给的匹配关系，配错会导致录音直接失败）：
+ * 16000 → 24000～96000；22050 → 32000～128000；44100 → 64000～320000。
+ * 取值靠区间上沿以保留余量（PCM 下码率不决定音质，但要满足参数校验）。
+ */
+const ENCODE_BIT_RATE_BY_SAMPLE_RATE: Record<RecordSampleRate, number> = {
+  16000: 48000,
+  22050: 64000,
+  44100: 96000,
+};
+
+export function encodeBitRateFor(sampleRate: RecordSampleRate): number {
+  return ENCODE_BIT_RATE_BY_SAMPLE_RATE[sampleRate];
+}
+
+/** 兼容旧引用：默认码率。 */
+export const RECORD_ENCODE_BIT_RATE = ENCODE_BIT_RATE_BY_SAMPLE_RATE[RECORD_SAMPLE_RATE];
 /** 分帧大小（KB）。 */
 export const RECORD_FRAME_SIZE_KB = 64;
 /** 平台录音时长上限（毫秒）。 */
@@ -54,6 +73,12 @@ export class RecordError extends Error {
 
 export interface RecordOptions {
   assetId: Id;
+  /**
+   * 录音采样率，默认 44100。
+   *
+   * 会写进 WAV 头，因此必须与工程采样率一致，否则素材需要重新导入才能使用。
+   */
+  sampleRate?: RecordSampleRate;
   /** 最长录音时长（毫秒），默认平台上限 10 分钟。 */
   maxDurationMs?: number;
   /** 录音支持的输入源（仅 Android 可用的取值会被平台忽略）。 */
@@ -162,6 +187,7 @@ function buildLevelsFromLevel0(level0: Int16Array): PeaksLevel[] {
 
 export class Recorder {
   private readonly options: RecordOptions;
+  private readonly sampleRate: RecordSampleRate;
   private writer: WavWriter | null = null;
   private accumulator: Level0Accumulator | null = null;
   private readonly pendingFrames: ArrayBuffer[] = [];
@@ -179,6 +205,7 @@ export class Recorder {
 
   constructor(options: RecordOptions) {
     this.options = options;
+    this.sampleRate = options.sampleRate ?? RECORD_SAMPLE_RATE;
   }
 
   /** 开始录音；返回 Promise，在停止（或中断）后以录音结果 resolve。 */
@@ -195,9 +222,9 @@ export class Recorder {
     const assetPath = paths.asset(this.options.assetId);
 
     this.writer = await openWavWriter(assetPath, {
-      sampleRate: RECORD_SAMPLE_RATE,
+      sampleRate: this.sampleRate,
       channels: RECORD_CHANNELS,
-      estimatedFrames: Math.round((maxDurationMs / 1000) * RECORD_SAMPLE_RATE),
+      estimatedFrames: Math.round((maxDurationMs / 1000) * this.sampleRate),
     });
     this.accumulator = new Level0Accumulator(BASE_BUCKET);
 
@@ -223,9 +250,9 @@ export class Recorder {
 
       const startOptions: WechatMiniprogram.RecorderManagerStartOption = {
         duration: maxDurationMs,
-        sampleRate: RECORD_SAMPLE_RATE,
+        sampleRate: this.sampleRate,
         numberOfChannels: RECORD_CHANNELS,
-        encodeBitRate: RECORD_ENCODE_BIT_RATE,
+        encodeBitRate: encodeBitRateFor(this.sampleRate),
         format: 'PCM',
         frameSize: RECORD_FRAME_SIZE_KB,
       };
@@ -271,7 +298,7 @@ export class Recorder {
     this.options.onProgress?.({
       frames: this.frames,
       frameCount: this.frameCount,
-      durationSec: this.frames / RECORD_SAMPLE_RATE,
+      durationSec: this.frames / this.sampleRate,
     });
     void this.drain();
   }
@@ -330,7 +357,7 @@ export class Recorder {
     }
 
     const wallClockMs = Date.now() - this.startedAtMs - this.pausedTotalMs;
-    const durationSec = this.frames / RECORD_SAMPLE_RATE;
+    const durationSec = this.frames / this.sampleRate;
 
     if (durationSec <= 0.05) {
       this.finishWithError(new RecordError('tooShort', '录音太短，请至少录制 1 秒', 'retry'));
@@ -368,7 +395,7 @@ export class Recorder {
       name: `录音 ${new Date(this.startedAtMs).toLocaleString()}`,
       origin: 'record',
       path: paths.relative.asset(this.options.assetId),
-      sampleRate: RECORD_SAMPLE_RATE,
+      sampleRate: this.sampleRate,
       channels: RECORD_CHANNELS,
       durationSec,
       frames,

@@ -9,7 +9,8 @@
  * `wx.openSetting`，不做反复弹窗。
  */
 import type { Id } from '../../core/types';
-import { RECORD_MAX_DURATION_MS, RECORD_SAMPLE_RATE, Recorder, RecordError, type RecordingResult } from '../../core/audio/record';
+import { RECORD_MAX_DURATION_MS, RECORD_SAMPLE_RATE, Recorder, RecordError, type RecordingResult, type RecordSampleRate } from '../../core/audio/record';
+import { readSettings } from '../../core/settings';
 import { createProjectWithAsset } from '../../core/store/import-file';
 import { createId } from '../../core/fs/paths';
 import { RollingWaveform } from '../../core/view/rolling-waveform';
@@ -37,6 +38,8 @@ interface RecordPageState {
   timer: ReturnType<typeof setInterval> | null;
   /** 累计已录时长（秒），由分帧数推算，与界面刷新无关。 */
   durationSec: number;
+  /** 本次录音的采样率（同时也作为新建工程的采样率）。 */
+  sampleRate: RecordSampleRate;
   warned: boolean;
 }
 
@@ -59,6 +62,7 @@ function stateOf(instance: object): RecordPageState {
       scratch: null,
       timer: null,
       durationSec: 0,
+      sampleRate: RECORD_SAMPLE_RATE,
       warned: false,
     };
     states.set(instance, state);
@@ -137,6 +141,9 @@ Page({
     if (state.recorder) return;
 
     await ensureDataDirs();
+    const settings = readSettings();
+    const sampleRate = settings.defaultSampleRate;
+
     state.assetId = createId();
     state.durationSec = 0;
     state.warned = false;
@@ -145,6 +152,7 @@ Page({
 
     const recorder = new Recorder({
       assetId: state.assetId,
+      sampleRate,
       onProgress: (progress) => {
         state.durationSec = progress.durationSec;
       },
@@ -155,6 +163,7 @@ Page({
       },
     });
     state.recorder = recorder;
+    state.sampleRate = sampleRate;
 
     this.setData({ phase: 'recording', stateText: '录音中', level: 0, hint: '' });
     startTimer(this);
@@ -185,7 +194,7 @@ Page({
     }
   },
 
-  handleTogglePause() {
+  async handleTogglePause() {
     const state = stateOf(this);
     const recorder = state.recorder;
     if (!recorder) return;
@@ -222,7 +231,10 @@ async function finishRecording(
 
   try {
     const stamp = new Date().toLocaleString();
-    const project = await createProjectWithAsset(result.asset, { name: `录音 ${stamp}` });
+    const project = await createProjectWithAsset(result.asset, {
+      name: `录音 ${stamp}`,
+      sampleRate: state.sampleRate,
+    });
 
     if (result.interrupted) {
       wx.showToast({ title: `已保存前 ${formatDurationShort(result.durationSec)}`, icon: 'none', duration: 2500 });
@@ -253,7 +265,7 @@ function startTimer(page: WechatMiniprogram.Page.TrivialInstance): void {
 
     if (remainingSec <= REMAIN_WARN_SEC && !state.warned) {
       state.warned = true;
-      wx.vibrateShort({ type: 'medium' });
+      if (readSettings().hapticEnabled) wx.vibrateShort({ type: 'medium' });
       wx.showToast({ title: `还剩 ${REMAIN_WARN_SEC} 秒将自动结束`, icon: 'none' });
     }
   };

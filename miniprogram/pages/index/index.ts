@@ -9,6 +9,7 @@ import { importFileIntoProject, renameProjectById } from '../../core/store/impor
 import { computeStorageUsage, formatUsageRatio, type StorageUsage } from '../../core/fs/quota';
 import { ensureDataDirs, readStoreIndex, removeProjectEntry, type StoreProjectEntry } from '../../core/fs/store';
 import { createProject, deleteProjectFile } from '../../core/store/create-project';
+import { readSettings } from '../../core/settings';
 import { ImportError } from '../../core/audio/import';
 import { formatBytes, formatDuration, formatRelativeTime } from '../../utils/format';
 import { logger } from '../../utils/logger';
@@ -241,7 +242,12 @@ async function runImport(
   page.setData({ importing: state.importing });
 
   try {
-    const project = await createProject({ name, withDefaultTrack: true });
+    const project = await createProject({
+      name,
+      withDefaultTrack: true,
+      // 工程采样率来自偏好：它决定素材中间格式，打开后不可更改
+      sampleRate: readSettings().defaultSampleRate,
+    });
     await importFileIntoProject({ project, srcPath, onProgress: (stage, ratio) => {
       state.importing = {
         name,
