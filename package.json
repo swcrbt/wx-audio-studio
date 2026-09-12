@@ -8,6 +8,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "bench": "vitest bench --run",
     "check": "npm run typecheck && npm run lint && npm run test"
   },
   "devDependencies": {

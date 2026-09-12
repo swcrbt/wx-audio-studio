@@ -26,6 +26,49 @@ function sinc(x: number): number {
   return Math.sin(pix) / pix;
 }
 
+/**
+ * 多相相位数量：把小数部分的偏移量化成该数量的相位（512 时幅度误差 < 0.1%，
+ * 但把“每个输出采样算一遍 sinc/cos”变成“查表 + 乘加”）。
+ */
+const POLYPHASE_COUNT = 512;
+
+/** 预计算表缓存：key = `taps:cutoff:phases`，避免每次重采样重建滤波器。 */
+const tableCache = new Map<string, Float32Array>();
+
+/**
+ * 构建多相滤波器表：`table[phase × taps + k]`。
+ * 每个相位的权重已归一化（直流增益为 1），运行时不再需要除权重和。
+ */
+function polyphaseTable(taps: number, cutoff: number, phases: number): Float32Array {
+  const key = `${taps}:${cutoff}:${phases}`;
+  const cached = tableCache.get(key);
+  if (cached) return cached;
+
+  const half = Math.floor(taps / 2);
+  const table = new Float32Array(phases * taps);
+
+  for (let p = 0; p < phases; p++) {
+    const frac = p / phases;
+    let sum = 0;
+    for (let k = 0; k < taps; k++) {
+      const distance = k - half - frac;
+      const normalized = distance / half;
+      const weight =
+        Math.abs(normalized) <= 1 ? 2 * cutoff * sinc(2 * cutoff * distance) * hann(normalized) : 0;
+      table[p * taps + k] = weight;
+      sum += weight;
+    }
+    if (sum !== 0) {
+      for (let k = 0; k < taps; k++) {
+        table[p * taps + k] = (table[p * taps + k] ?? 0) / sum;
+      }
+    }
+  }
+
+  tableCache.set(key, table);
+  return table;
+}
+
 /** 选择合适的多相抽头数（2:1 用半带，其余用通用长度）。 */
 export function tapsForRates(fromRate: number, toRate: number): number {
   const ratio = fromRate / toRate;
@@ -61,28 +104,40 @@ export function resampleMono(
   const halfTaps = Math.floor(taps / 2);
   const ratio = fromRate / toRate;
   const cutoff = (toRate > fromRate ? 0.5 : 0.5 * (toRate / fromRate)) * CUTOFF_SCALE;
+  const table = polyphaseTable(taps, cutoff, POLYPHASE_COUNT);
 
   for (let n = 0; n < outFrames; n++) {
     const srcPos = n * ratio;
     const base = Math.floor(srcPos);
 
-    let sum = 0;
-    let weightSum = 0;
-
-    for (let k = -halfTaps; k <= halfTaps; k++) {
-      const index = base + k;
-      if (index < 0 || index >= input.length) continue;
-
-      const distance = srcPos - index; // ∈ [-1, 1] 附近
-      const normalized = distance / halfTaps;
-      if (normalized < -1 || normalized > 1) continue;
-
-      const weight = 2 * cutoff * sinc(2 * cutoff * distance) * hann(normalized);
-      sum += (input[index] ?? 0) * weight;
-      weightSum += weight;
+    // 靠近两端时滤波器会越界：退回精确卷积（按有效权重归一化），避免边缘幅度塌陷
+    if (base - halfTaps < 0 || base + halfTaps >= input.length) {
+      let sum = 0;
+      let weightSum = 0;
+      for (let k = -halfTaps; k <= halfTaps; k++) {
+        const index = base + k;
+        if (index < 0 || index >= input.length) continue;
+        const distance = srcPos - index;
+        const normalized = distance / halfTaps;
+        if (normalized < -1 || normalized > 1) continue;
+        const weight = 2 * cutoff * sinc(2 * cutoff * distance) * hann(normalized);
+        sum += (input[index] ?? 0) * weight;
+        weightSum += weight;
+      }
+      out[n] = weightSum !== 0 ? sum / weightSum : 0;
+      continue;
     }
 
-    out[n] = weightSum !== 0 ? sum / weightSum : 0;
+    const frac = srcPos - base;
+    const phase = Math.min(POLYPHASE_COUNT - 1, Math.round(frac * POLYPHASE_COUNT));
+    const row = phase * taps;
+    const start = base - halfTaps;
+
+    let sum = 0;
+    for (let k = 0; k < taps; k++) {
+      sum += (input[start + k] ?? 0) * (table[row + k] ?? 0);
+    }
+    out[n] = sum;
   }
 
   return out;
