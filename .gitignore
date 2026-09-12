@@ -1,0 +1,22 @@
+# 依赖
+node_modules/
+
+# 构建产物
+dist/
+miniprogram/miniprogram_npm/
+miniprogram/**/*.js.map
+
+# 微信开发者工具
+project.private.config.json
+.wechatide/
+miniprogram/.vscode/
+
+# 测试与覆盖率
+coverage/
+*.lcov
+
+# 编辑器 / 系统
+.DS_Store
+.idea/
+*.swp
+*.log
