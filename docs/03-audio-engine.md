@@ -1,6 +1,6 @@
 # 03 · 音频引擎架构与 DSP 算法
 
-> 状态：**实现中** ｜ 最后更新：2026-09-12 ｜ 关联代码：`miniprogram/workers/render/{codec,dsp,edl,peaks}/**`、`workers/render/render.ts`、`workers/render/index.ts`、`core/engine/controller.ts`
+> 状态：**实现中** ｜ 最后更新：2026-09-12 ｜ 关联代码：`miniprogram/workers/render/{codec,dsp,edl,peaks}/**`、`workers/render/render.ts`、`workers/render/index.ts`、`core/engine/controller.ts`、`core/audio/import.ts`
 >
 > **本文负责**：中间格式、导入与录音管线、峰值结构、分块渲染调度、DSP 算法与参数、播放与试听策略、模块接口、错误降级。
 > **本文不负责**：平台能力与限制（版本、格式支持、内存上限） → [02](./02-platform-capability.md)；EDL 字段与存储布局 → [05](./05-data-model.md)；性能验收指标 → [06](./06-engineering-roadmap.md)；交互与视觉 → [04](./04-ui-ux.md)。
@@ -160,8 +160,12 @@ level N：bucketSize = BASE_BUCKET << N，逐级构建到只剩 1 个桶
 ```
 header: magic('PK01', 4B) | version(uint16) | channels(uint16) | baseBucket(uint32)
         | levelCount(uint16) | reserved(uint16, 置 0) | 每级 bucket 数[]（uint32 × levelCount）
-body  : 各 level 按顺序排列，每 bucket 为 int16 min + int16 max（交错，小端）
+body  : 先排列声道 0 的全部 level，再排列声道 1，依此类推；
+        每个 level 内每 bucket 为 int16 min + int16 max（交错，小端）
 ```
+
+所有声道的级别数与各级桶数必须一致，因此 `levelCounts` 只存一份；`bucketSize` 由 `baseBucket << level` 推出，同样不落盘；
+写盘时若各声道结构不一致则直接报错（宁可不写，也不写出结构损坏的文件）。
 
 `bucketSize` **不落盘**：它等于 `baseBucket << level`，存两份会带来不一致风险（AGENTS §0.7）。
 

@@ -70,6 +70,29 @@ export function removeFile(filePath: string): Promise<void> {
   });
 }
 
+/** 读取整个文件为 ArrayBuffer（素材导入的第一步）。 */
+export function readArrayBuffer(filePath: string): Promise<ArrayBuffer> {
+  return new Promise((resolve, reject) => {
+    getFs().readFile({
+      filePath,
+      success: (res) => resolve(res.data as ArrayBuffer),
+      fail: (err) => reject(new FsError(describeFsError(err))),
+    });
+  });
+}
+
+/** 写入二进制数据（峰值文件、分割后的素材等）。 */
+export function writeArrayBuffer(filePath: string, data: ArrayBuffer): Promise<void> {
+  return new Promise((resolve, reject) => {
+    getFs().writeFile({
+      filePath,
+      data,
+      success: () => resolve(),
+      fail: (err) => reject(new FsError(describeFsError(err, data.byteLength))),
+    });
+  });
+}
+
 /** 读取 UTF-8 文本。 */
 export function readText(filePath: string): Promise<string> {
   return new Promise((resolve, reject) => {

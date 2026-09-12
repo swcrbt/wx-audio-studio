@@ -18,7 +18,7 @@ function samplePyramid(buckets = 5) {
 
 function baseFile() {
   const levels = samplePyramid();
-  return { version: PEAKS_VERSION, channels: 1, baseBucket: 1024, levels };
+  return { version: PEAKS_VERSION, channels: 1, baseBucket: 1024, levels: [levels] };
 }
 
 describe('serializePeaks / deserializePeaks', () => {
@@ -26,7 +26,7 @@ describe('serializePeaks / deserializePeaks', () => {
     const file = baseFile();
     const buffer = serializePeaks(file);
     expect(buffer.byteLength).toBe(peaksByteLength(file.levels));
-    expect(peaksHeaderBytes(file.levels.length)).toBe(16 + file.levels.length * 4);
+    expect(peaksHeaderBytes(file.levels[0]?.length ?? 0)).toBe(16 + (file.levels[0]?.length ?? 0) * 4);
   });
 
   it('往返后每级 bucketSize/count/数据完全一致', () => {
@@ -36,19 +36,43 @@ describe('serializePeaks / deserializePeaks', () => {
     expect(restored?.version).toBe(PEAKS_VERSION);
     expect(restored?.channels).toBe(1);
     expect(restored?.baseBucket).toBe(1024);
-    expect(restored?.levels.length).toBe(file.levels.length);
-    for (let i = 0; i < file.levels.length; i++) {
-      const a = file.levels[i];
-      const b = restored?.levels[i];
-      expect(b?.bucketSize).toBe(a?.bucketSize);
-      expect(b?.count).toBe(a?.count);
-      expect(Array.from(b?.data ?? [])).toEqual(Array.from(a?.data ?? []));
+    expect(restored?.levels.length).toBe(1);
+
+    const original = file.levels[0] ?? [];
+    const restoredLevels = restored?.levels[0] ?? [];
+    expect(restoredLevels.length).toBe(original.length);
+    for (let i = 0; i < original.length; i++) {
+      expect(restoredLevels[i]?.bucketSize).toBe(original[i]?.bucketSize);
+      expect(restoredLevels[i]?.count).toBe(original[i]?.count);
+      expect(Array.from(restoredLevels[i]?.data ?? [])).toEqual(Array.from(original[i]?.data ?? []));
     }
+  });
+
+  it('多声道：按声道分组往返，数据不串位', () => {
+    const mono = samplePyramid();
+    const right = mono.map((level) => ({
+      bucketSize: level.bucketSize,
+      count: level.count,
+      data: Int16Array.from(level.data, (v) => Math.round(v / 2)),
+    }));
+    const file = { version: PEAKS_VERSION, channels: 2, baseBucket: 1024, levels: [mono, right] };
+
+    const restored = deserializePeaks(serializePeaks(file));
+    expect(restored?.channels).toBe(2);
+    expect(restored?.levels.length).toBe(2);
+    expect(Array.from(restored?.levels[0]?.[0]?.data ?? [])).toEqual(Array.from(mono[0]?.data ?? []));
+    expect(Array.from(restored?.levels[1]?.[0]?.data ?? [])).toEqual(Array.from(right[0]?.data ?? []));
+  });
+
+  it('各声道结构不一致时拒绝序列化（避免写出坏文件）', () => {
+    const mono = samplePyramid();
+    const broken = { version: PEAKS_VERSION, channels: 2, baseBucket: 1024, levels: [mono, mono.slice(0, 2)] };
+    expect(() => serializePeaks(broken)).toThrow();
   });
 
   it('保留极值（序列化不引入精度损失）', () => {
     const restored = deserializePeaks(serializePeaks(baseFile()));
-    const top = restored?.levels[restored.levels.length - 1];
+    const top = restored?.levels[0]?.[(restored.levels[0]?.length ?? 1) - 1];
     expect(top?.data[0]).toBe(-30000);
     expect(top?.data[1]).toBe(30000);
   });
@@ -76,7 +100,6 @@ describe('serializePeaks / deserializePeaks', () => {
     new DataView(truncated).setUint16(12, 1000, true); // 超出实际数据
     expect(deserializePeaks(truncated)).toBeNull();
   });
-
   it('零长度缓冲返回 null 而不是抛错', () => {
     expect(deserializePeaks(new ArrayBuffer(0))).toBeNull();
   });
