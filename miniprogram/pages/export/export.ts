@@ -15,6 +15,7 @@ import { NORMALIZE_TARGET_DB, planExport, type ExportPlan } from '../../core/eng
 import { loadAssetPeaks, readProject } from '../../core/store/load-project';
 import { readSettings } from '../../core/settings';
 import { formatBytes, formatDuration, formatStamp } from '../../utils/format';
+import { Transport } from '../../core/player/transport';
 import { logger } from '../../utils/logger';
 
 const SAMPLE_RATE_OPTIONS = ['44100 Hz（推荐）', '22050 Hz（体积一半）', '16000 Hz（语音）'];
@@ -27,6 +28,8 @@ interface ExportPageState {
   plan: ExportPlan | null;
   task: ExportTask | null;
   result: ExportResult | null;
+  /** 试听成品的播放通道（导出后才创建）。 */
+  audition: Transport | null;
 }
 
 const states = new WeakMap<object, ExportPageState>();
@@ -34,7 +37,7 @@ const states = new WeakMap<object, ExportPageState>();
 function stateOf(instance: object): ExportPageState {
   let state = states.get(instance);
   if (!state) {
-    state = { project: null, peaks: new Map(), plan: null, task: null, result: null };
+    state = { project: null, peaks: new Map(), plan: null, task: null, result: null, audition: null };
     states.set(instance, state);
   }
   return state;
@@ -61,6 +64,7 @@ Page({
     etaLabel: '',
     result: null as { fileName: string; sizeLabel: string; durationLabel: string } | null,
     isPc: false,
+    auditioning: false,
   },
 
   async onLoad(query: Record<string, string | undefined>) {
@@ -103,7 +107,34 @@ Page({
   },
 
   onUnload() {
-    stateOf(this).task?.cancel();
+    const state = stateOf(this);
+    state.task?.cancel();
+    state.audition?.destroy();
+  },
+
+  /** 试听最终渲染结果（EX-4）：导出后才有可播的成品，未导出时给出明确引导。 */
+  handleAudition() {
+    const state = stateOf(this);
+    const result = state.result;
+    if (!result) {
+      wx.showToast({ title: '导出后可试听最终效果', icon: 'none' });
+      return;
+    }
+
+    if (!state.audition) {
+      state.audition = new Transport({
+        onStateChange: (transportState) => this.setData({ auditioning: transportState === 'playing' }),
+        onEnded: () => this.setData({ auditioning: false }),
+        onError: (error) => wx.showToast({ title: error.message, icon: 'none' }),
+      });
+      state.audition.load(result.filePath);
+    }
+
+    if (this.data.auditioning) {
+      state.audition.pause();
+      return;
+    }
+    state.audition.play();
   },
 
   handleSampleRateChange(event: WechatMiniprogram.PickerChange) {
@@ -144,8 +175,12 @@ Page({
     try {
       const result = await task.start();
       state.result = result;
+      // 新成品与旧的试听通道无关，丢掉重建（避免播放上一次的文件）
+      state.audition?.destroy();
+      state.audition = null;
       this.setData({
         exporting: false,
+        auditioning: false,
         result: {
           fileName: result.fileName,
           sizeLabel: formatBytes(result.bytes),

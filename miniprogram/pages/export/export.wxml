@@ -65,6 +65,7 @@
       <text class="done-title">导出完成</text>
       <text class="done-line">{{result.fileName}} · {{result.sizeLabel}} · {{result.durationLabel}}</text>
       <text class="done-tip">已保存在「我的 → 成品」，可随时发送给朋友</text>
+      <view class="btn btn-ghost" bindtap="handleAudition">{{auditioning ? '⏸ 暂停试听' : '▶ 试听最终效果'}}</view>
       <view class="btn btn-primary" bindtap="handleShare">发送给朋友</view>
       <view wx:if="{{isPc}}" class="btn btn-ghost" bindtap="handleSaveToDisk">保存到电脑</view>
       <view class="btn btn-ghost" bindtap="handleBackToEditor">返回编辑</view>
