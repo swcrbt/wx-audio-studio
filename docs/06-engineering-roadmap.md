@@ -48,9 +48,10 @@ wx-audio-studio/
 │   │   ├── store/                    工程状态（EDL + 撤销栈 + 自动保存）· 打开/新建/导入工程
 │   │   ├── view/                     viewport.ts（时间轴视口与手势几何，纯计算）
 │   │   ├── audio/                    import.ts（导入管线）· record.ts（录音管线）
-│   │   ├── fs/                       paths · io · errors · wav-file · store · quota
+│   │   ├── fs/                       paths · io · errors · wav-file · store · quota · renders（成品扫描）
 │   │   ├── player/                   transport · clip-preview · preview-cache
-│   │   └── caps.ts                   基础库与设备能力探测
+│   │   ├── caps.ts                   基础库与设备能力探测
+│   │   └── settings.ts               用户偏好（Storage，不占数据目录配额）
 │   ├── utils/                        logger · format · throttle · dom 查询助手
 │   └── assets/                       图标、插画（注意主包体积）
 ├── tests/                            Node 端单测与基准（Vitest）

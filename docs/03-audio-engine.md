@@ -326,6 +326,22 @@ class AssetChunkCache {
 - 素材分块大小固定（2s），通过 `fd.read({position: headerBytes + chunkIndex * 2 * bytesPerSample * channels})` 精确定位。
 - LRU 上限 4 块（立体声 ≈ 1.4MB），保证内存恒定。
 
+### 5.5 导出后处理（变采样率 / 变声道）
+
+渲染引擎要求 `output.sampleRate === edl.sampleRate` 且声道与中间格式一致，因此“导出为 22050Hz / 立体声”不能交给渲染器，而是在渲染完成后做一次后处理：
+
+```
+渲染（工程采样率/声道） → [临时文件] → 分块重采样 + 声道映射 → 成品 [删除临时文件]
+```
+
+| 项 | 设计 |
+| --- | --- |
+| 触发条件 | 目标采样率或目标声道与工程不一致时才走（一致时直接输出到成品路径，无额外开销） |
+| 实现 | `core/engine/export-resample.ts`：分块 `readPcmFrames` → `resampleRange`（相位由全局输出索引决定）→ 声道映射（与导入同一套规则）→ 交错写盘 |
+| 内存 | 每块 5s；中间缓冲 = 源声道数 × 块帧数（单声道 ≈ 0.9MB） |
+| 临时文件 | 放 `tmp/export-*.wav`，成功后立即删除；失败时由写盘器 `abort` 清理 |
+| 进度 | 渲染占 0～80%、后处理占 80～100%（`ExportProgress.stage` 区分 `render` / `postProcess`） |
+
 ## 6. DSP 算法清单
 
 所有 DSP 均为**纯函数**，签名统一为就地操作或返回新缓冲，不依赖任何平台 API，可在 Node + Vitest 下直接测试。

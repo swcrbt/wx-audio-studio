@@ -1,1 +1,63 @@
-<view class="page"></view>
+<view class="page">
+  <!-- 成品 -->
+  <view class="section-title">成品</view>
+
+  <view wx:if="{{renders.length > 0}}" class="list">
+    <view
+      wx:for="{{renders}}"
+      wx:key="fileName"
+      class="card"
+      data-name="{{item.fileName}}"
+      bindlongpress="handleFileMenu"
+    >
+      <view class="card-main">
+        <text class="card-name">{{item.title}}</text>
+        <text class="card-meta">{{item.durationLabel}} · {{item.sizeLabel}} · {{item.timeLabel}}</text>
+      </view>
+      <view class="card-action" catchtap="handleFileMenu" data-name="{{item.fileName}}">⋯</view>
+    </view>
+  </view>
+
+  <empty-state
+    wx:else
+    type="export"
+    title="还没有成品"
+    desc="在编辑器里点「导出」，成品会出现在这里，可随时发送给朋友"
+    actions="{{emptyActions}}"
+    bind:action="handleEmptyAction"
+  />
+
+  <!-- 存储 -->
+  <view class="section-title">存储</view>
+  <view class="card card-block">
+    <view class="row">
+      <text class="label">占用</text>
+      <text class="value">{{usageText}} / 200MB（{{usageLevelText}}）</text>
+    </view>
+    <view class="row row-detail">
+      <text class="detail">{{usageDetail}}</text>
+    </view>
+  </view>
+
+  <view class="buttons">
+    <view class="btn btn-ghost" bindtap="handleCleanTmp">清理临时文件</view>
+    <view class="btn btn-ghost" bindtap="handleCleanUnreferenced">清理未引用素材</view>
+  </view>
+
+  <!-- 入口 -->
+  <view class="section-title">其他</view>
+  <view class="card card-block">
+    <view class="row row-link" bindtap="handleOpenSettings">
+      <text class="label">设置</text>
+      <text class="value">›</text>
+    </view>
+    <view class="row row-link" bindtap="handleShowPrivacy">
+      <text class="label">隐私与麦克风用途</text>
+      <text class="value">›</text>
+    </view>
+    <view class="row row-link" bindtap="handleShowAbout">
+      <text class="label">关于</text>
+      <text class="value">›</text>
+    </view>
+  </view>
+</view>

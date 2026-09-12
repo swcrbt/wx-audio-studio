@@ -237,7 +237,14 @@ function replan(page: WechatMiniprogram.Page.TrivialInstance): void {
 
 function applyProgress(page: WechatMiniprogram.Page.TrivialInstance, progress: ExportProgress): void {
   const percent = Math.min(100, Math.round(progress.ratio * 100));
-  const stageText = progress.stage === 'done' ? '完成' : progress.stage === 'plan' ? '准备中' : '渲染中';
+  const stageText =
+    progress.stage === 'done'
+      ? '完成'
+      : progress.stage === 'plan'
+        ? '准备中'
+        : progress.stage === 'postProcess'
+          ? '转换格式'
+          : '渲染中';
   const etaLabel = progress.etaSec > 0 ? ` · 约剩 ${Math.ceil(progress.etaSec)}s` : '';
   page.setData({ percent, stageText, etaLabel });
 }

@@ -262,6 +262,9 @@ ${wx.env.USER_DATA_PATH}/
 └── index.json                  项目索引与统计（见下）
 ```
 
+> **用户偏好不进数据目录**：设置项（默认导出采样率/声道、性能模式、震动开关）只有几十字节，
+> 存在 Storage（`core/settings.ts`，键 `wx-audio-studio:settings`）而不占 200MB 配额。
+
 ### 4.1 索引文件 `index.json`
 
 列表页需要"不读全部工程文件就能渲染列表"，因此维护一个轻量索引：
