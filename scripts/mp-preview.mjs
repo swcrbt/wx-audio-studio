@@ -18,6 +18,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { execFileSync } from 'node:child_process';
 import ci from 'miniprogram-ci';
 
 const ROOT = process.cwd();
@@ -67,9 +68,40 @@ function readVersion() {
   return `${pkg.version}.${stamp}`;
 }
 
+/** 把二维码放进共享存储（相册能扫到）并尝试触发媒体库扫描。 */
+function publishQrCodeToGallery(sourcePath) {
+  const candidates = ['/sdcard/Pictures', '/storage/emulated/0/Pictures', '/sdcard/DCIM/Camera'];
+  let published = null;
+  for (const dir of candidates) {
+    try {
+      if (!fs.existsSync(dir)) continue;
+      const target = path.join(dir, path.basename(sourcePath));
+      fs.copyFileSync(sourcePath, target);
+      published = target;
+      break;
+    } catch {
+      // 可能是未授予存储权限：继续尝试下一个候选目录
+    }
+  }
+
+  if (!published) {
+    console.log('· 无法写入共享目录（如 /sdcard/Pictures）：若想从相册扫码，请先执行 termux-setup-storage');
+    return;
+  }
+
+  console.log(`· 已复制到共享目录：${published}`);
+  try {
+    execFileSync('termux-media-scan', [published], { stdio: 'ignore' });
+    console.log('· 已触发媒体库扫描（termux-media-scan）');
+  } catch {
+    console.log('· 未安装 termux-api，未能自动扫描：打开系统相册/文件管理器刷新一次即可看到');
+  }
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const upload = args.includes('--upload');
+  const terminalQr = args.includes('--terminal');
   const pageIndex = args.indexOf('--page');
   const pagePath = pageIndex >= 0 ? args[pageIndex + 1] : 'spikes/index/index';
   const { appid, privateKeyPath } = loadConfig();
@@ -111,13 +143,24 @@ async function main() {
     project,
     desc: `M0 spike ${new Date().toISOString()}`,
     setting,
-    qrcodeFormat: 'image',
+    qrcodeFormat: terminalQr ? 'terminal' : 'image',
     qrcodeOutputDest: path.join(ROOT, QR_PATH),
     pagePath,
     onProgressUpdate,
   });
+
+  if (terminalQr) {
+    console.log('\n上方即为预览二维码：用另一台设备的微信扫它（同一台手机无法扫自己的屏）。');
+    console.log('若要通过相册扫码，改用不带 --terminal 的默认方式。');
+    return;
+  }
+
   console.log(`二维码已生成：${QR_PATH}`);
-  console.log('用手机微信「扫一扫 → 右上角相册 → 选择该图片」打开。');
+  publishQrCodeToGallery(path.join(ROOT, QR_PATH));
+  console.log('\n打开小程序的方式（任选其一）：');
+  console.log('  ① 微信 → 文件传输助手 → 发这张图给自己 → 长按图片 → 「识别图中二维码」（最通用）');
+  console.log('  ② 微信 → 扫一扫 → 右上角「相册」→ 选这张图');
+  console.log('  ③ 另一台设备的微信扫本终端里 `npm run mp:preview -- --terminal` 打印的二维码');
 }
 
 main().catch((error) => {
