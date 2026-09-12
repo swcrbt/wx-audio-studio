@@ -61,8 +61,11 @@ wx-audio-studio/
 │   │   │   ├── import.ts             导入管线（解码→重采样→落盘）
 │   │   │   └── record.ts             录音（PCM 分帧 → 流式落盘）
 │   │   ├── fs/
-│   │   │   ├── paths.ts · wav-file.ts（fd 分块读写）· store.ts（index.json）
-│   │   │   └── quota.ts              容量统计与清理
+│   │   │   ├── paths.ts              路径唯一构造入口（禁止在别处拼路径）
+│   │   │   ├── io.ts · errors.ts     通用读写（含原子写 rename）· 错误码翻译文案
+│   │   │   ├── wav-file.ts           WAV 分块读写（fd + position）、流式写头回填
+│   │   │   ├── store.ts              工程索引 index.json（含损坏重建）
+│   │   │   └── quota.ts              容量统计与清理（200MB 配额）
 │   │   ├── player/                   播放器封装（InnerAudioContext / WebAudio 两种）
 │   │   └── caps.ts                   基础库与设备能力探测（性能模式决策）
 │   ├── utils/                        format（时间/体积/dB）、throttle、dom 查询助手

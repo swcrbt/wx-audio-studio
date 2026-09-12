@@ -17,6 +17,7 @@
 
 | 日期 | 文档 | 类型 | 摘要 | 关联代码 |
 | --- | --- | --- | --- | --- |
+| 2026-09-12 | `docs/06` | 修改 | 实现回填：§1 目录树补 `core/fs/io.ts`（通用读写与原子写）、`errors.ts`（错误码→用户文案）及各文件职责 | `miniprogram/core/fs/**` |
 | 2026-09-12 | `docs/03` | 修改 | 实现回填：§5.2 调度图与传输约定改为“素材请求/回传统一用**帧号**”（字节偏移由主线程按声道数换算），§8 接口草案同步为 `initJob(job)` / `planChunk` / `chunkBounds` / `renderChunk(state, chunkIndex, AssetPcmMap)` 与 `SUPPORTED_EFFECTS`；§6.6 效果链新增实现说明 | `workers/render/render.ts` `workers/render/index.ts` `core/engine/worker-protocol.ts` |
 | 2026-09-12 | `docs/05` `docs/06` | 修改 | 实现回填：`docs/05 §9` 新增“循环片段不参与区间切分”的 M1 取舍与理由；`docs/06 §2.1` 明确 EDL 不变量的正确表述（同轨片段**允许重叠**，交叉淡化需要） | `workers/render/edl/{query,ops,validate}.ts` |
 | 2026-09-12 | `docs/03` `docs/05` | 修改 | 实现回填：§4.1 峰值层级表更正为“逐级 ×2”（原写 ×4，与 §4.2 合并算法矛盾）、补全二进制头字节布局（字段宽度/保留位/`bucketSize` 不落盘）；§4.2 参考实现修正 `buildUpperLevel` 的输出长度（原实现多分配一倍）与奇数桶处理；两份文档状态改为“实现中”并回填真实代码路径 | `workers/render/peaks/build.ts` `codec.ts` `sample.ts` |
