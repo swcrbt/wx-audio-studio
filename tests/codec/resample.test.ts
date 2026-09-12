@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   outputFrameCount,
+  requiredInputRange,
   resampleInt16,
   resampleInterleaved,
   resampleMono,
+  resampleRange,
   tapsForRates,
 } from '../../miniprogram/workers/render/codec/resample';
 
@@ -109,6 +111,88 @@ describe('resampleMono', () => {
     const out = resampleMono(input, 44100, 22050);
     expect(out.length).toBeGreaterThan(0);
     for (const v of out) expect(Number.isFinite(v)).toBe(true);
+  });
+});
+
+describe('resampleRange（分块处理，供导入/导出管线使用）', () => {
+  it('按 3 段拼接与整段结果一致（2:1 降采样）', () => {
+    const input = sine(440, 44100, 44100, 0.5);
+    const whole = resampleMono(input, 44100, 22050);
+    const outFrames = whole.length;
+    const perChunk = Math.ceil(outFrames / 3);
+    const assembled = new Float32Array(outFrames);
+
+    for (let chunk = 0; chunk < 3; chunk++) {
+      const outStart = chunk * perChunk;
+      const outCount = Math.min(perChunk, outFrames - outStart);
+      if (outCount <= 0) break;
+
+      const need = requiredInputRange(44100, 22050, outStart, outCount);
+      const slice = input.subarray(need.startFrame, need.startFrame + need.frameCount);
+      const part = resampleRange(slice, 44100, 22050, {
+        inputStartFrame: need.startFrame,
+        outStart,
+        outCount,
+      });
+      expect(part.length).toBe(outCount);
+      assembled.set(part, outStart);
+    }
+
+    let maxDiff = 0;
+    for (let i = 1000; i < outFrames - 1000; i++) {
+      maxDiff = Math.max(maxDiff, Math.abs((assembled[i] ?? 0) - (whole[i] ?? 0)));
+    }
+    expect(maxDiff).toBeLessThan(1e-3);
+  });
+
+  it('非整数比（44.1k→16k）分块与整段一致', () => {
+    const input = sine(300, 44100, 22050, 0.5);
+    const whole = resampleMono(input, 44100, 16000);
+    const outFrames = whole.length;
+    const perChunk = Math.ceil(outFrames / 4);
+    const assembled = new Float32Array(outFrames);
+
+    for (let chunk = 0; chunk < 4; chunk++) {
+      const outStart = chunk * perChunk;
+      const outCount = Math.min(perChunk, outFrames - outStart);
+      if (outCount <= 0) break;
+      const need = requiredInputRange(44100, 16000, outStart, outCount);
+      const slice = input.subarray(need.startFrame, need.startFrame + need.frameCount);
+      assembled.set(
+        resampleRange(slice, 44100, 16000, {
+          inputStartFrame: need.startFrame,
+          outStart,
+          outCount,
+        }),
+        outStart,
+      );
+    }
+
+    let maxDiff = 0;
+    for (let i = 500; i < outFrames - 500; i++) {
+      maxDiff = Math.max(maxDiff, Math.abs((assembled[i] ?? 0) - (whole[i] ?? 0)));
+    }
+    expect(maxDiff).toBeLessThan(1e-3);
+  });
+
+  it('采样率相同时 resampleRange 等价于按索引取值', () => {
+    const input = Float32Array.from({ length: 100 }, (_, i) => i / 100);
+    const out = resampleRange(input, 44100, 44100, { inputStartFrame: 0, outStart: 10, outCount: 5 });
+    expect(Array.from(out)).toEqual([0.1, 0.11, 0.12, 0.13, 0.14].map((v) => expect.closeTo(v, 6)));
+  });
+
+  it('非法参数与空输入返回空或零，不抛错', () => {
+    expect(resampleRange(new Float32Array(0), 44100, 22050, { inputStartFrame: 0, outStart: 0, outCount: 10 }).length).toBe(10);
+    expect(resampleRange(new Float32Array(10), 0, 22050, { inputStartFrame: 0, outStart: 0, outCount: 3 }).length).toBe(3);
+    expect(resampleRange(new Float32Array(10), 44100, 22050, { inputStartFrame: 0, outStart: 0, outCount: 0 }).length).toBe(0);
+  });
+
+  it('requiredInputRange 覆盖所需的源区间并含余量', () => {
+    const range = requiredInputRange(44100, 22050, 1000, 500);
+    // 输出 1000..1500 对应源帧 2000..3000，两侧还需 halfTaps 余量
+    expect(range.startFrame).toBeLessThanOrEqual(2000);
+    expect(range.startFrame + range.frameCount).toBeGreaterThanOrEqual(3000);
+    expect(range.startFrame).toBeGreaterThan(1900);
   });
 });
 

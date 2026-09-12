@@ -75,8 +75,49 @@ export function buildUpperLevel(lower: Int16Array): Int16Array {
   return out;
 }
 
-export interface BuildPyramidOptions {
-  /** level 0 的桶大小，默认 `BASE_BUCKET`。 */
+/**
+ * level 0 的增量累加器：分块喂入 PCM，边处理边累计桶的 min/max。
+ *
+ * 用途：导入/录音管线按块处理时不把整段 PCM 留在内存里；结果与 `buildPeaksLevel0` 一致。
+ * 每填满一个桶才写一次数组，不存在逐采样分配。
+ */
+export class Level0Accumulator {
+  private readonly bucketSize: number;
+  private readonly buckets: number[] = [];
+  private currentMin = INT16_MAX;
+  private currentMax = INT16_MIN;
+  private filled = 0;
+
+  constructor(bucketSize: number = BASE_BUCKET) {
+    this.bucketSize = Math.max(1, Math.floor(bucketSize));
+  }
+
+  /** 喂入一段 PCM（可以跨桶边界）。 */
+  push(pcm: Int16Array): void {
+    for (let i = 0; i < pcm.length; i++) {
+      const v = pcm[i] ?? 0;
+      if (v < this.currentMin) this.currentMin = v;
+      if (v > this.currentMax) this.currentMax = v;
+      this.filled++;
+      if (this.filled >= this.bucketSize) this.flushBucket();
+    }
+  }
+
+  /** 结束并返回 `min/max` 交错数据（与 `buildPeaksLevel0` 同构）。 */
+  finish(): Int16Array {
+    if (this.filled > 0) this.flushBucket();
+    return Int16Array.from(this.buckets);
+  }
+
+  private flushBucket(): void {
+    this.buckets.push(this.currentMin, this.currentMax);
+    this.currentMin = INT16_MAX;
+    this.currentMax = INT16_MIN;
+    this.filled = 0;
+  }
+}
+
+export interface BuildPyramidOptions {  /** level 0 的桶大小，默认 `BASE_BUCKET`。 */
   baseBucket?: number;
   /** 最多构建多少级（防止极长音频构建出无意义的层级），默认 16。 */
   maxLevels?: number;

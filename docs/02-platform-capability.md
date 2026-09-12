@@ -282,8 +282,11 @@
 ① cp mp.config.example.json mp.config.json，填入 appid 与私钥文件路径
 ② npm run mp:doctor    # 自检凭据与项目结构（不上传任何东西，也不打印私钥内容）
 ③ npm run mp:preview   # 生成 mp-qrcode.png（默认打开 spikes/index/index）
-④ 手机微信「扫一扫 → 右上角相册 → 选 mp-qrcode.png」进入实验页
-   （相册里找不到该图片时，先 `cp mp-qrcode.png /sdcard/Pictures/` 让系统媒体库收录）
+④ 打开小程序（任选其一，扫码不通就换一种）：
+   · 微信 → 文件传输助手 → 把 mp-qrcode.png 发给自己 → 长按图片 → 「识别图中二维码」（最通用）
+   · 微信 → 扫一扫 → 右上角「相册」→ 选 mp-qrcode.png（脚本已自动复制到 /sdcard/Pictures
+     并尝试用 termux-media-scan 触发媒体库扫描，需 termux-api）
+   · 另一台设备扫：`npm run mp:preview -- --terminal` 直接在终端打印二维码
 ⑤ 逐项运行，点「复制全部结果」，把文本回填到本文件与对应章节（不靠截图）
 ```
 

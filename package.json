@@ -12,6 +12,7 @@
     "mp:preview": "node scripts/mp-preview.mjs",
     "mp:upload": "node scripts/mp-preview.mjs --upload",
     "mp:doctor": "node scripts/mp-doctor.mjs",
+    "mp:serve": "node scripts/mp-serve-qr.mjs",
     "check": "npm run typecheck && npm run lint && npm run test"
   },
   "devDependencies": {

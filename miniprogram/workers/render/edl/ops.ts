@@ -22,10 +22,11 @@ import type {
   TimeRange,
   Track,
 } from '../../../core/types';
+import { MAX_GAIN_DB, MIN_GAIN_DB, SNAP_GRID_SEC } from '../constants';
 import { clipDurationSec, clipEndSec, isTrackAudible, trackById, trackDurationSec } from './query';
 
 /** 时间轴网格步长，吸附时使用。 */
-export const SNAP_GRID_SEC = 0.1;
+export { SNAP_GRID_SEC };
 
 /** 区间类型来自 `core/types.ts`，此处重新导出以便调用方就近引用。 */
 export type { TimeRange };
@@ -386,9 +387,9 @@ export function trimToRange(edl: Edl, range: TimeRange, idFactory: () => Id): Ed
   return next;
 }
 
-/** 设置片段增益：-60 ～ +12 dB，超出被 clamp。 */
+/** 设置片段增益：超出允许范围会被 clamp。 */
 export function setClipGainDb(edl: Edl, trackId: Id, clipId: Id, gainDb: number): Edl {
-  const clamped = Number.isFinite(gainDb) ? Math.max(-60, Math.min(12, gainDb)) : 0;
+  const clamped = Number.isFinite(gainDb) ? Math.max(MIN_GAIN_DB, Math.min(MAX_GAIN_DB, gainDb)) : 0;
   return updateClip(edl, trackId, clipId, { gainDb: clamped });
 }
 

@@ -176,6 +176,94 @@ export function resampleInterleaved(
   return out;
 }
 
+export interface ResampleRangeOptions {
+  /** `input[0]` 对应的全局输入帧号（可为小数）。 */
+  inputStartFrame: number;
+  /** 本次要产出的全局输出帧区间 `[outStart, outStart + outCount)`。 */
+  outStart: number;
+  outCount: number;
+}
+
+/**
+ * 分段重采样：相位由**全局输出索引**决定，因此按段调用再拼接的结果与整段一次性重采样一致。
+ *
+ * 用途：导入/导出管线必须分块处理（长音频不允许整段驻留内存），
+ * 调用方只需让 `input` 覆盖本段所需的源区间（含两侧余量，见 `requiredInputRange`）。
+ */
+export function resampleRange(
+  input: Float32Array,
+  fromRate: number,
+  toRate: number,
+  options: ResampleRangeOptions,
+): Float32Array {
+  const outCount = Math.max(0, Math.floor(options.outCount));
+  const out = new Float32Array(outCount);
+  if (outCount === 0 || input.length === 0 || !(fromRate > 0) || !(toRate > 0)) return out;
+
+  if (fromRate === toRate) {
+    for (let i = 0; i < outCount; i++) {
+      const index = Math.round(options.outStart + i - options.inputStartFrame);
+      out[i] = index >= 0 && index < input.length ? (input[index] ?? 0) : 0;
+    }
+    return out;
+  }
+
+  const taps = tapsForRates(fromRate, toRate);
+  const halfTaps = Math.floor(taps / 2);
+  const ratio = fromRate / toRate;
+  const cutoff = (toRate > fromRate ? 0.5 : 0.5 * (toRate / fromRate)) * CUTOFF_SCALE;
+  const table = polyphaseTable(taps, cutoff, POLYPHASE_COUNT);
+
+  for (let i = 0; i < outCount; i++) {
+    const srcPos = (options.outStart + i) * ratio - options.inputStartFrame;
+    const base = Math.floor(srcPos);
+
+    if (base - halfTaps < 0 || base + halfTaps >= input.length) {
+      let sum = 0;
+      let weightSum = 0;
+      for (let k = -halfTaps; k <= halfTaps; k++) {
+        const index = base + k;
+        if (index < 0 || index >= input.length) continue;
+        const distance = srcPos - index;
+        const normalized = distance / halfTaps;
+        if (normalized < -1 || normalized > 1) continue;
+        const weight = 2 * cutoff * sinc(2 * cutoff * distance) * hann(normalized);
+        sum += (input[index] ?? 0) * weight;
+        weightSum += weight;
+      }
+      out[i] = weightSum !== 0 ? sum / weightSum : 0;
+      continue;
+    }
+
+    const frac = srcPos - base;
+    const phase = Math.min(POLYPHASE_COUNT - 1, Math.round(frac * POLYPHASE_COUNT));
+    const row = phase * taps;
+    const start = base - halfTaps;
+
+    let sum = 0;
+    for (let k = 0; k < taps; k++) {
+      sum += (input[start + k] ?? 0) * (table[row + k] ?? 0);
+    }
+    out[i] = sum;
+  }
+
+  return out;
+}
+
+/** 某段输出需要的源帧区间（含两侧余量，供分块读取使用）。 */
+export function requiredInputRange(
+  fromRate: number,
+  toRate: number,
+  outStart: number,
+  outCount: number,
+): { startFrame: number; frameCount: number } {
+  const halfTaps = Math.floor(tapsForRates(fromRate, toRate) / 2) + 2;
+  const ratio = fromRate / toRate;
+  const startFrame = Math.max(0, Math.floor(outStart * ratio) - halfTaps);
+  const endFrame = Math.ceil((outStart + outCount) * ratio) + halfTaps;
+  return { startFrame, frameCount: Math.max(0, endFrame - startFrame) };
+}
+
 /** Int16 交错 → 重采样 → Int16 交错（导入/导出管线的便捷组合，单位为 16bit）。 */
 export function resampleInt16(
   input: Int16Array,

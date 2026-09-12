@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   BASE_BUCKET,
+  Level0Accumulator,
   buildPeaksLevel0,
   buildPyramid,
   buildUpperLevel,
@@ -50,6 +51,50 @@ describe('buildPeaksLevel0', () => {
     const level0 = buildPeaksLevel0(pcm);
     expect(level0.length).toBe(4);
     expect(Array.from(level0)).toEqual([-100, 0, 100, 100]);
+  });
+});
+
+describe('Level0Accumulator（分块累加，供导入/录音管线使用）', () => {
+  function pseudoRandom(length: number): Int16Array {
+    const pcm = new Int16Array(length);
+    let state = 4242;
+    for (let i = 0; i < length; i++) {
+      state = (state * 1103515245 + 12345) & 0x7fffffff;
+      pcm[i] = (state % 65536) - 32768;
+    }
+    return pcm;
+  }
+
+  it('分块喂入（含跨桶）与一次性构建结果完全一致', () => {
+    const pcm = pseudoRandom(5000);
+    const accumulator = new Level0Accumulator(1024);
+    const step = 700; // 故意不整除桶大小，覆盖跨桶情况
+    for (let offset = 0; offset < pcm.length; offset += step) {
+      accumulator.push(pcm.subarray(offset, Math.min(offset + step, pcm.length)));
+    }
+    expect(Array.from(accumulator.finish())).toEqual(Array.from(buildPeaksLevel0(pcm, 1024)));
+  });
+
+  it('极值与未满桶的尾段被正确保留', () => {
+    const pcm = new Int16Array([32767, -32768, 5, -5, 9]);
+    const accumulator = new Level0Accumulator(2);
+    accumulator.push(pcm.subarray(0, 3));
+    accumulator.push(pcm.subarray(3));
+    expect(Array.from(accumulator.finish())).toEqual(Array.from(buildPeaksLevel0(pcm, 2)));
+  });
+
+  it('空输入返回空数组；未喂过数据时 finish 不报错', () => {
+    const empty = new Level0Accumulator(1024);
+    expect(empty.finish().length).toBe(0);
+    const one = new Level0Accumulator(1024);
+    one.push(new Int16Array(0));
+    expect(one.finish().length).toBe(0);
+  });
+
+  it('非法桶大小被 clamp 到 1', () => {
+    const accumulator = new Level0Accumulator(0);
+    accumulator.push(new Int16Array([3, -3]));
+    expect(Array.from(accumulator.finish())).toEqual([3, 3, -3, -3]);
   });
 });
 

@@ -3,6 +3,7 @@
  *
  * 单位约定：dB 与线性增益绝不混用，函数名与参数名必须表明单位（如 `gainDb` / `gainLinear`）。
  */
+import { MAX_GAIN_DB, MIN_GAIN_DB } from '../constants';
 
 /**
  * dB → 线性增益：`10^(db/20)`。0dB → 1，-6dB ≈ 0.5012，-60dB ≈ 0.001。
@@ -25,9 +26,6 @@ export function linearToDb(gainLinear: number): number {
   if (!(gainLinear > 0)) return Number.NEGATIVE_INFINITY;
   return 20 * Math.log10(gainLinear);
 }
-
-const MIN_GAIN_DB = -60;
-const MAX_GAIN_DB = 12;
 
 /**
  * 把增益限制到 UI 允许范围（-60dB ～ +12dB）。

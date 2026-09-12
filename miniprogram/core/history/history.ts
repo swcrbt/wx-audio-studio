@@ -10,11 +10,9 @@
  * - 素材相关操作的 `invert` 为空操作：素材文件会保留到历史被裁剪，保证撤销一定能恢复。
  */
 import type { Command, Edl, Id } from '../types';
+import { COALESCE_WINDOW_MS, MAX_HISTORY } from '../../workers/render/constants';
 
-/** 历史栈容量上限。 */
-export const MAX_HISTORY = 100;
-/** 相同 coalesceKey 的合并窗口。 */
-export const COALESCE_WINDOW_MS = 800;
+export { COALESCE_WINDOW_MS, MAX_HISTORY };
 
 /** 命令对象（与 docs/05 §6 对应，但正/逆操作为纯函数）。 */
 export interface EditCommand {

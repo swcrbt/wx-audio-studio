@@ -5,19 +5,17 @@
  * 因此阈值都以“占配额百分比”表达，不假设具体可用字节数。
  */
 import type { Edl } from '../types';
+import {
+  MAX_PREVIEW_FILES,
+  QUOTA_CRITICAL_RATIO,
+  QUOTA_WARN_RATIO,
+  STORAGE_QUOTA_BYTES,
+} from '../../workers/render/constants';
 import { DATA_DIRS, paths } from './paths';
 import { exists, fileSize, listFiles, removeFile } from './io';
 import { logger } from '../../utils/logger';
 
-/** 官方配额：所有百分比阈值均以此为分母。 */
-export const STORAGE_QUOTA_BYTES = 200 * 1024 * 1024;
-
-/** 容量警戒线：超过时在首页提示，超过上限时要导出前强制提示。 */
-export const QUOTA_WARN_RATIO = 0.8;
-export const QUOTA_CRITICAL_RATIO = 0.95;
-
-/** 预览缓存保留数量上限。 */
-export const MAX_PREVIEW_FILES = 3;
+export { MAX_PREVIEW_FILES, QUOTA_CRITICAL_RATIO, QUOTA_WARN_RATIO, STORAGE_QUOTA_BYTES };
 
 export type QuotaLevel = 'ok' | 'warn' | 'critical';
 
