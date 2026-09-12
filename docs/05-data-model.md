@@ -384,7 +384,8 @@ export function migrate(raw: any): Project {
 | `sourceEnd` 超出素材时长 | 加载时 clamp 到素材时长并记录一条警告 |
 | 预览缓存与 EDL 不同步 | 每次命令提交时把 `previewDirtyFrom = min(受影响区间起)`，播放时只重渲染脏区间 |
 | 时间轴出现负数或重叠错误 | 所有写入 `timelineStart` 的路径统一走 `edlOps` 层（`workers/render/edl/ops.ts`）并做 clamp + 排序，禁止在 UI 层直接改 EDL |
-| 浮点累积误差导致片段间出现 1 采样空隙 | 渲染时对相邻片段边界做"帧对齐"（`round(t * sampleRate)`），相邻片段共享同一帧边界 |
+| 浮点累积误差导致片段间出现 1 采样空隙 | 渲染时对相邻片段边界做"帧对齐"（`round(t * sampleRate)`），相邻片段共享同一帧边界；EDL 侧由 `workers/render/edl/ops.ts` 在写入 `timelineStart` 时统一对齐 |
+| 循环（BGM）片段的区间切分语义歧义 | `loop: true` 的片段在 M1 **不参与** `deleteRange` / `trimToRange` 的区间切分（相交即整体处理）：取模映射会产生"半段循环"的不可解释结果。需要对 BGM 做精细剪辑时先关闭 `loop`（M2 再评估） |
 
 ## 10. 未决问题
 
