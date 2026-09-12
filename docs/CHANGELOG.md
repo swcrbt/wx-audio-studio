@@ -17,6 +17,7 @@
 
 | 日期 | 文档 | 类型 | 摘要 | 关联代码 |
 | --- | --- | --- | --- | --- |
+| 2026-09-12 | `docs/03` | 修改 | §4.1 明确峰值文件 body 的**多声道排列**（按声道分组，各声道级数与各级桶数必须一致，不一致时拒绝序列化）；§3 导入管线关联代码回填 `core/audio/import.ts` | `workers/render/peaks/codec.ts` `core/audio/import.ts` |
 | 2026-09-12 | `docs/02` | 修改 | §5「怎么跑」补全凭据获取的两条路径（小程序测试号 / 个人主体账号）与 `npm run mp:doctor` 自检步骤；明确凭据文件不入库、拿不到上传密钥时需改用 PC 开发者工具 | `scripts/mp-doctor.mjs` |
 | 2026-09-12 | `docs/02` `docs/06` `README.md` `docs/README` | 修改 | M0 落地：§5 新增“怎么跑这些实验”（miniprogram-ci 生成预览二维码 → 手机微信相册扫码 → 一键复制结果）；§6 §1 目录树补 `spikes/` 分包、`workers/spike/`、`scripts/`、`tests/bench/`；§2 工具链新增 `miniprogram-ci` 通道；根 README 与 docs/README 状态由“未开始编码”改为“实现中”（含开发命令） | `miniprogram/spikes/**` `scripts/mp-preview.mjs` |
 | 2026-09-12 | `docs/05` | 修改 | 修正类型内部不一致：`EffectInstance.params` 的值类型由 `number \| string \| boolean` 改为 `EffectParamValue = number \| string \| boolean \| number[]`，否则 `eq10` 的 `bands`（十段增益数组）无法表达（原定义与同一节的参数注释矛盾） | `core/types.ts` `workers/render/edl/validate.ts` |

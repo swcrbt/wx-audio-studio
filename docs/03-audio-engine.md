@@ -138,6 +138,8 @@ export function floatToInt16(src: Float32Array, dst: Int16Array, offset = 0): vo
 | 中断 | `onInterruptionBegin` → 停止并保存已录部分 |
 | 上限 | `duration: 600000`（10 分钟，平台上限） |
 
+> **PC 的处理**：PC 微信不支持设置 `sampleRate`（[02 §1.2](./02-platform-capability.md#12-录音)），无法保证中间格式的采样率，因此录音管线在 PC 上直接拒绝并提示用手机录音（需要 PC 录音时，先录后重采样到工程采样率再入库）。
+
 ## 4. 峰值金字塔（波形数据）
 
 ### 4.1 数据结构
