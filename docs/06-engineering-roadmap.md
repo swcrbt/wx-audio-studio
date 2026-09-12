@@ -29,43 +29,46 @@ wx-audio-studio/
 │   │   ├── track-row/ · clip-block/
 │   │   ├── progress-task/
 │   │   └── empty-state/
-│   ├── core/                         ★ 与 UI 无关的纯逻辑（可在 Node 测试）
-│   │   ├── types.ts                  全部数据模型类型
-│   │   ├── audio/
-│   │   │   ├── wav.ts                WAV 头读写、Float↔Int16
-│   │   │   ├── import.ts             导入管线（解码→重采样→落盘）
-│   │   │   ├── record.ts             录音（PCM 分帧 → 流式落盘）
-│   │   │   ├── encoder.ts            WAV / MP3(lamejs) 编码
-│   │   │   └── resample.ts
-│   │   ├── dsp/                      ★ 纯 DSP 函数（单测重点）
-│   │   │   ├── gain.ts · fade.ts · pan.ts
-│   │   │   ├── biquad.ts · eq.ts
-│   │   │   ├── compressor.ts · gate.ts · limiter.ts
-│   │   │   ├── fft.ts · spectral.ts（谱减降噪）
-│   │   │   ├── wsola.ts（变速保音高）
-│   │   │   ├── echo.ts · reverb.ts
-│   │   │   └── analyze.ts（peak/rms/silence/normalize/loudness）
-│   │   ├── peaks/
-│   │   │   ├── build.ts · codec.ts（序列化）· sample.ts（按视口取点）
-│   │   ├── edl/
-│   │   │   ├── ops.ts                所有 EDL 变更的唯一入口（含 clamp/排序）
-│   │   │   ├── query.ts              时长推导、区间相交查询
-│   │   │   └── validate.ts           加载校验与自动修复
-│   │   ├── history/                  命令模式撤销栈
+│   ├── workers/                       ★ `app.json` 的 `workers` 目录：Worker 内只能 require 本目录内的文件
+│   │   └── render/                   Worker 入口 + 渲染所需的全部纯计算代码
+│   │       ├── index.ts              Worker 入口（onMessage → 分块渲染 → 回传）
+│   │       ├── render.ts             ★ 分块渲染（EDL 求值 + 混音，纯计算）
+│   │       ├── protocol.ts           跨线程消息类型（仅类型定义）
+│   │       ├── codec/
+│   │       │   ├── wav.ts            WAV 头读写、Float↔Int16
+│   │       │   ├── resample.ts
+│   │       │   └── encoder.ts        WAV / MP3(lamejs) 编码
+│   │       ├── dsp/                  ★ 纯 DSP 函数（单测重点）
+│   │       │   ├── gain.ts · fade.ts · pan.ts
+│   │       │   ├── biquad.ts · eq.ts
+│   │       │   ├── compressor.ts · gate.ts · limiter.ts
+│   │       │   ├── fft.ts · spectral.ts（谱减降噪）
+│   │       │   ├── wsola.ts（变速保音高）
+│   │       │   ├── echo.ts · reverb.ts
+│   │       │   └── analyze.ts（peak/rms/silence/normalize/loudness）
+│   │       ├── peaks/
+│   │       │   └── build.ts · codec.ts（序列化）· sample.ts（按视口取点）
+│   │       └── edl/
+│   │           ├── ops.ts                所有 EDL 变更的唯一入口（含 clamp/排序）
+│   │           ├── query.ts              时长推导、区间相交查询
+│   │           └── validate.ts           加载校验与自动修复
+│   ├── core/                         ★ 平台适配 + 主线程调度（纯计算层已移至 `workers/render/`，见 ADR-0001）
+│   │   ├── types.ts                  全部数据模型类型（仅类型；Worker 侧用 `import type` 引入）
 │   │   ├── engine/
-│   │   │   ├── render.ts             ★ 分块渲染（Worker 侧，纯计算）
 │   │   │   ├── controller.ts         主线程调度 + 文件 I/O
-│   │   │   └── worker-protocol.ts    消息类型定义（主线程与 Worker 共用）
+│   │   │   └── worker-protocol.ts    消息类型定义（主线程与 Worker 共用的唯一定义处）
+│   │   ├── history/                  命令模式撤销栈
+│   │   ├── audio/
+│   │   │   ├── import.ts             导入管线（解码→重采样→落盘）
+│   │   │   └── record.ts             录音（PCM 分帧 → 流式落盘）
 │   │   ├── fs/
 │   │   │   ├── paths.ts · wav-file.ts（fd 分块读写）· store.ts（index.json）
 │   │   │   └── quota.ts              容量统计与清理
 │   │   ├── player/                   播放器封装（InnerAudioContext / WebAudio 两种）
 │   │   └── caps.ts                   基础库与设备能力探测（性能模式决策）
 │   ├── utils/                        format（时间/体积/dB）、throttle、dom 查询助手
-│   ├── workers/
-│   │   └── render/                   app.json 的 workers 目录（Worker 入口）
 │   └── assets/                       图标、插画（注意主包体积）
-├── tests/                            Node 端单测（Vitest）
+├── tests/                            Node 端单测（Vitest，直接 import `miniprogram/workers/render/**`）
 │   ├── dsp/*.test.ts
 │   ├── edl/*.test.ts
 │   ├── peaks/*.test.ts
@@ -76,17 +79,20 @@ wx-audio-studio/
 └── README.md
 ```
 
+> **目录与官方平台限制的对应关系**：`workers/` 目录内的代码不能引用目录外文件（官方限制，来源见 [02 §1.5](./02-platform-capability.md#15-输入选择与多线程)），因此纯计算层物理上落在 `workers/render/` 内、由主线程与单测反向复用。方案取舍见 [ADR-0001](./adr/0001-worker-code-packaging.md)。
+
 ### 1.1 架构分层
 
-分层规则（含原因与强制检查方式）的唯一权威处是 [AGENTS.md §1](../AGENTS.md#1-目录与分层硬性规则)。本节仅说明**代码目录如何映射到这些层**：
+分层规则（含原因与强制检查方式）的唯一权威处是 [AGENTS.md §1](../AGENTS.md#1-目录与分层硬性规则)。本节仅说明**物理目录如何映射到这些层**：
 
 | 目录 | 层次 | 允许依赖 |
 | --- | --- | --- |
-| `core/dsp/` `core/audio/` `core/peaks/` `core/edl/` | 纯逻辑（可在 Node 单测） | 仅 TypedArray / Math / 自身 |
-| `core/engine/` | 渲染调度 | 上述纯逻辑 + Worker 协议 |
-| `core/fs/` `core/player/` `core/caps.ts` | 平台适配 | `wx.*` 仅允许出现在这几处 |
+| `workers/render/dsp/` `workers/render/codec/` `workers/render/peaks/` `workers/render/edl/` | 纯逻辑（可在 Node 单测） | 仅 TypedArray / Math / 自身；**禁止** `wx.*`；**禁止** require 本目录之外的任何路径 |
+| `workers/render/render.ts` `workers/render/index.ts` | 渲染引擎与 Worker 入口 | 同目录纯逻辑 + 仅类型的协议定义 |
+| `core/engine/` `core/history/` | 主线程调度与状态 | 纯逻辑（反向 require `workers/render/**`）+ `core/fs` |
+| `core/audio/` `core/fs/` `core/player/` `core/caps.ts` | 平台适配 | `wx.*` 仅允许出现在这几处 |
+| `core/types.ts` | 数据模型类型 | 仅类型声明，无运行时代码 |
 | `pages/` `components/` | 视图与交互 | `core/**`，不直接触碰 `wx.*` 文件/音频 API |
-| `workers/render/` | Worker 入口 | 与 `core/engine/render.ts` 共享纯计算代码 |
 
 ## 2. 技术栈与工具链
 
@@ -95,19 +101,19 @@ wx-audio-studio/
 | 语言 | **TypeScript** | 编码规范（strict、禁 `any`、单位后缀等）见 [AGENTS §2](../AGENTS.md#2-编码规范) |
 | 框架 | 原生小程序（不用跨端框架） | 音频/Canvas/Worker 都贴近平台能力，跨端框架收益低、风险高 |
 | UI | 原生 WXML/WXSS + 自定义组件 | 不引入 UI 库（体积与可控性） |
-| 测试 | **Vitest**（Node 环境） | 只测 `core/**`（与平台解耦的部分），覆盖 DSP、EDL、峰值、渲染调度 |
-| 静态检查 | ESLint + Prettier | `no-restricted-imports` 强制 dsp 层不许引 wx |
-| 构建 | 微信开发者工具内置 TS 编译 / 可选 `gulp` 或 `tsc -w` | MVP 用工具链最简方案，避免复杂构建 |
+| 测试 | **Vitest**（Node 环境） | 只测纯逻辑层（`workers/render/**`，与平台解耦），覆盖 DSP、EDL、峰值、渲染调度 |
+| 静态检查 | ESLint + Prettier | `no-restricted-imports` 强制纯逻辑层不许引 wx、不许 require `workers/render/` 目录外的路径 |
+| 构建 | 微信开发者工具内置 TS 编译（无额外构建步骤） | MVP 用工具链最简方案；⚠️ `workers/` 目录内 `.ts` 的编译支持待 [DB-05](./02-platform-capability.md#5-待实测验证清单spike-任务) 确认，若不可用则回退 [ADR-0001](./adr/0001-worker-code-packaging.md) 的方案 B |
 | 依赖 | 默认**零运行时依赖**；`lamejs` 仅 P1 按需引入 | 主包体积与供应链安全 |
 
 ### 2.1 测试策略
 
 | 层次 | 手段 | 覆盖目标 |
 | --- | --- | --- |
-| DSP 正确性 | 合成信号断言：正弦波过 EQ 后频响偏移 < ±0.5dB；脉冲响应长度正确；淡入淡出边界增益精确为 0/1 | `core/dsp/**` 行覆盖 ≥ 80% |
-| EDL 逻辑 | 属性式断言：任意随机操作序列后 `时长非负`、`片段不重叠/不越界`、`撤销后 EDL 完全等于操作前（深比较）` | `core/edl/**` |
-| 峰值 | 用已知 PCM 校验桶 min/max 精确值；随机区间抽样与暴力计算一致 | `core/peaks/**` |
-| 渲染 | 用内存中的假素材（正弦）渲染，断言输出长度、静音区间、交叉淡化区功率恒定、限制器不超 ceiling | `core/engine/render.ts` |
+| DSP 正确性 | 合成信号断言：正弦波过 EQ 后频响偏移 < ±0.5dB；脉冲响应长度正确；淡入淡出边界增益精确为 0/1 | `workers/render/dsp/**` 行覆盖 ≥ 80% |
+| EDL 逻辑 | 属性式断言：任意随机操作序列后 `时长非负`、`片段不重叠/不越界`、`撤销后 EDL 完全等于操作前（深比较）` | `workers/render/edl/**` |
+| 峰值 | 用已知 PCM 校验桶 min/max 精确值；随机区间抽样与暴力计算一致 | `workers/render/peaks/**` |
+| 渲染 | 用内存中的假素材（正弦）渲染，断言输出长度、静音区间、交叉淡化区功率恒定、限制器不超 ceiling | `workers/render/render.ts` |
 | 平台集成 | **只能在真机/开发者工具手测**：格式矩阵（DB-01）、内存上限（DB-02）、Worker 能力（DB-05）、导出分享（DB-11） | Spike 清单 |
 | 回归 | 建立"真机冒烟用例表"（每次发版必跑 15 条核心路径） | 全流程 |
 

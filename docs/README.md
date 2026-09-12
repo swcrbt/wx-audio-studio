@@ -44,6 +44,7 @@
 | [04-ui-ux.md](./04-ui-ux.md) | 信息架构、页面流程、编辑器线框、波形画布规格、手势映射、状态机、视觉规范 | 前端 / 设计 |
 | [05-data-model.md](./05-data-model.md) | 实体模型、JSON 结构、本地存储布局、容量与清理、撤销重做、自动保存 | 前端开发 |
 | [06-engineering-roadmap.md](./06-engineering-roadmap.md) | 目录结构、工具链、里程碑与验收标准、测试策略、性能预算、合规与审核 | 全员 |
+| [adr/](./adr/) | 架构决策记录（ADR）：一旦定下难改的决策，含候选方案与理由 | 全员 |
 | [CHANGELOG.md](./CHANGELOG.md) | 文档变更记录 + 14 项待回填的 Spike 结论 | 全员 |
 | [../AGENTS.md](../AGENTS.md) | **开发规范**：文档先行、分层规则、单位后缀、性能红线、提交与 DoD、合规 | 全员 / agent |
 

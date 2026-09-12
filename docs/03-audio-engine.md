@@ -1,6 +1,6 @@
 # 03 · 音频引擎架构与 DSP 算法
 
-> 状态：**已定稿** ｜ 最后更新：2026-09-12 ｜ 关联代码：未实现（设计阶段，规划于 `miniprogram/core/audio/`、`core/dsp/`、`core/peaks/`、`core/engine/`）
+> 状态：**已定稿** ｜ 最后更新：2026-09-12 ｜ 关联代码：未实现（设计阶段，规划于 `miniprogram/workers/render/`、`miniprogram/core/audio/`）
 >
 > **本文负责**：中间格式、导入与录音管线、峰值结构、分块渲染调度、DSP 算法与参数、播放与试听策略、模块接口、错误降级。
 > **本文不负责**：平台能力与限制（版本、格式支持、内存上限） → [02](./02-platform-capability.md)；EDL 字段与存储布局 → [05](./05-data-model.md)；性能验收指标 → [06](./06-engineering-roadmap.md)；交互与视觉 → [04](./04-ui-ux.md)。
@@ -247,7 +247,9 @@ export interface RenderJob {
   │  ⑨ write 回填头 → close(fd)               │
 ```
 
-**为什么让主线程读文件、Worker 只算**：Worker 的可用 API 白名单尚未确认（DB-05）。这个模式把文件 I/O 留在主线程，Worker 退化为**纯计算单元**（只依赖 TypedArray / Math），无论 DB-05 结果如何都能work，且 Worker 内代码可在 Node 环境下直接单测。
+**为什么让主线程读文件、Worker 只算**：官方已明确“Worker 内不支持 `wx` 系列的 API”，且 Worker 内代码**只能 require Worker 目录内的文件**（依据：[02 §1.5](./02-platform-capability.md#15-输入选择与多线程) 的 `S9`）。因此这个模式不是权衡结果而是**唯一可行方案**：把文件 I/O 留在主线程，Worker 退化为**纯计算单元**（只依赖 TypedArray / Math），且 Worker 内代码可在 Node 环境下直接单测。
+
+> **目录归属约束**：由于“只能 require Worker 目录内的文件”，渲染引擎与其依赖的纯计算代码（`dsp/`、`edl/`、`codec/`、`peaks/`）必须**物理位于 `workers/render/` 内**，主线程与单测反向 require 同一份源码 —— 方案与理由见 [ADR-0001](./adr/0001-worker-code-packaging.md)，目录树见 [06 §1](./06-engineering-roadmap.md#1-目录结构)。
 
 **数据面优化**
 - 跨线程只传 **PCM 块（ArrayBuffer）+ 少量元数据**，绝不逐采样通信。
@@ -442,12 +444,12 @@ export async function importAudio(opts: {
   onProgress?: (stage: ImportStage, ratio: number) => void;
 }): Promise<ImportResult>;
 
-// core/peaks/index.ts
+// workers/render/peaks/index.ts
 export interface PeaksRef { levels: { bucketSize: number; count: number }[]; filePath: string; }
 export async function buildAndSavePeaks(channels: { dataPath: string; meta: WavMeta }, outPath: string): Promise<PeaksRef>;
 export function samplePeaks(peaks: PeakBuffer[], fromSample: number, toSample: number, px: number, out: Float32Array): void;
 
-// core/engine/render.ts（Worker 侧，纯计算）
+// workers/render/render.ts（Worker 侧，纯计算）
 export function initJob(edl: Edl, output: RenderOutput, range: RenderRange, chunkSec: number): RenderState;
 export function renderChunk(state: RenderState, chunkIndex: number, assets: Map<string, Int16Array>): { pcm: Int16Array; nextChunk: number | null };
 

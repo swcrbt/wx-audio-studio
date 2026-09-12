@@ -154,15 +154,17 @@ ADR 模板（固定五段）：
 
 | 规则 | 原因 | 违反后果 |
 | --- | --- | --- |
-| `core/dsp/**`、`core/audio/**`、`core/peaks/**`、`core/edl/**` **禁止 import 任何 `wx.*`** | 必须能在 Node 中单测 | 单测无法运行 |
-| `core/engine/render.ts` 只依赖 `core/dsp`、`core/edl` 与 TypedArray | Worker 可用 API 白名单未知（DB-05） | 渲染在真机上不可用 |
-| 所有 EDL 变更**只能**通过 `core/edl/ops.ts` | 集中做 clamp、排序、帧对齐 | 时间轴越界/重叠类 bug |
-| 跨线程通信的消息类型**只能**定义在 `core/engine/worker-protocol.ts` | 类型安全 + 单一来源 | 主线程与 Worker 协议漂移 |
+| `workers/render/{dsp,codec,peaks,edl}/**` **禁止 import 任何 `wx.*`** | 必须能在 Node 中单测，且 Worker 内本就没有 `wx` API | 单测无法运行 / 渲染在真机失败 |
+| `workers/render/**` 内**禁止 require 该目录之外的任何路径** | 官方限制：Worker 内只能 require Worker 目录内的文件（见 [docs/02 §1.5](./docs/02-platform-capability.md#15-输入选择与多线程)） | 渲染在真机上直接失败 |
+| `workers/render/render.ts` 只依赖同目录的 `dsp/**`、`edl/**`、`codec/**` 与 TypedArray | 同上 | 渲染在真机上不可用 |
+| 所有 EDL 变更**只能**通过 `workers/render/edl/ops.ts` | 集中做 clamp、排序、帧对齐 | 时间轴越界/重叠类 bug |
+| 跨线程通信的消息类型**只能**定义在 `core/engine/worker-protocol.ts`，且 Worker 侧**只能 `import type`** | 类型安全 + 单一来源；`import type` 编译后被消除，不会产生跨目录 require | 主线程与 Worker 协议漂移 / Worker 运行时失败 |
 | 平台耦合**只能**出现在 `core/fs/**`、`core/player/**`、`core/caps.ts`、`pages/**`、`components/**` | 隔离平台依赖 | 无法测试 |
 | UI 层不得直接调用 `FileSystemManager` / `WebAudioContext` | 统一走 `core/` 封装 | 容量统计与错误处理失控 |
 | 不得硬编码 `USER_DATA_PATH` 或任何文件路径字符串 | 统一走 `core/fs/paths.ts` | 路径散落、清理策略失效 |
+| 主线程与 `tests/` **可以**反向 require `workers/render/**` | 同一份纯逻辑被 Worker / 主线程 / 单测复用（[ADR-0001](./docs/adr/0001-worker-code-packaging.md)） | 若靠复制代码会变成两份实现、必然漂移 |
 
-用 ESLint `no-restricted-imports` + `no-restricted-globals` 强制前两条，代码审查强制其余。
+用 ESLint `no-restricted-imports` + `no-restricted-globals` 强制前三行与“禁止跨目录 require”，代码审查强制其余。
 
 ## 2. 编码规范
 
@@ -170,7 +172,7 @@ ADR 模板（固定五段）：
 
 - `strict: true`，且开启 `noUncheckedIndexedAccess`、`noImplicitOverride`。
 - **禁止 `any`**。确需逃生舱时用 `unknown` + 类型守卫；万不得已用 `any` 必须写 `// eslint-disable-next-line` + 一行理由注释。
-- 公共 API（`core/**` 导出）必须有显式返回类型。
+- 公共 API（`workers/render/**` 与 `core/**` 的导出）必须有显式返回类型。
 - 禁止非空断言 `!`（除 DOM/SelectorQuery 查询结果，且需紧邻一次判空）。
 - 使用 `??`、`?.` 而非 `||`、多层 `if`。注意 `||` 会把 `0` 和 `''` 吞掉 —— 音频参数里 `0` 是合法值（0dB、0 声像），**这是高危错误**。
 
@@ -223,7 +225,7 @@ ADR 模板（固定五段）：
 
 ## 3. 音频与 DSP 专项规范
 
-1. **纯函数优先**：`core/dsp/**` 里所有函数无副作用、不读写全局、不访问平台 API；输入输出都是 `Float32Array` / `Int16Array` / 标量。
+1. **纯函数优先**：`workers/render/dsp/**` 里所有函数无副作用、不读写全局、不访问平台 API；输入输出都是 `Float32Array` / `Int16Array` / 标量。
 2. **数值安全**：入口处对输入做 clamp 与 `Number.isFinite` 检查；滤波器反馈路径加极小量（如 `1e-20`）防 denormal；浮点输出累加后统一 clamp 到 `[-1, 1]` 再转 Int16。
 3. **不做逐采样内存分配**：循环内禁止 `new`、禁止创建闭包、避免数组 `push`；缓冲一律预分配复用。
 4. **避免循环内 `Math.pow` / `Math.exp`**：需要连续包络时用增量乘法（如 `gain *= ratioPerSample`）或预先算好系数。
@@ -271,7 +273,7 @@ ADR 模板（固定五段）：
 
 本节只定**不可协商的强制要求**：
 
-1. `core/**` 的任何改动必须带单测；DSP / EDL / 峰值 / 渲染为强制覆盖区。
+1. 纯逻辑层（`workers/render/**`）与 `core/**` 的任何改动必须带单测；DSP / EDL / 峰值 / 渲染为强制覆盖区。
 2. 平台相关行为必须真机验证，不得以开发者工具结果替代，结论回填 `docs/02`。
 3. 提交前 `npm run check`（typecheck + lint + test）必须全绿。
 4. **不得为了测试通过而弱化断言或删除测试**；测试与文档冲突时，先改文档再改测试。
@@ -363,7 +365,7 @@ ADR 模板（固定五段）：
 | 禁止 | 依据 |
 | --- | --- |
 | ❌ 先写代码后补文档 | [§0.3](#03-例外紧急修复) |
-| ❌ 在 `core/dsp`/`core/audio` 里 import `wx.*`；UI 层写 DSP 或直接操作文件系统；硬编码路径 | [§1](#1-目录与分层硬性规则) |
+| ❌ 在 `workers/render/{dsp,codec,peaks,edl}` 里 import `wx.*`或 require 目录外文件；UI 层写 DSP 或直接操作文件系统；硬编码路径 | [§1](#1-目录与分层硬性规则) |
 | ❌ 用 `||` 判断音频参数（吞掉 `0dB`/`0` 声像）；dB 与线性增益混用；数值不带单位后缀 | [§2.3](#23-单位后缀音频项目的命脉必须严格执行) |
 | ❌ 未登记的 `wx.*` API；不处理异步 fail 分支；频繁创建播放器实例 | [§4](#4-平台-api-使用规范) |
 | ❌ PCM 常驻内存；并行解码多个音频；热路径做 I/O 或大循环 | [§5](#5-性能与内存红线) |
@@ -398,3 +400,4 @@ ADR 模板（固定五段）：
 - [docs/05-data-model.md](./docs/05-data-model.md) — 数据模型与存储
 - [docs/06-engineering-roadmap.md](./docs/06-engineering-roadmap.md) — 工程、里程碑、合规
 - [docs/CHANGELOG.md](./docs/CHANGELOG.md) — 文档变更记录
+- [docs/adr/](./docs/adr/) — 架构决策记录（ADR）
