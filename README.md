@@ -4,11 +4,22 @@
 
 全端上处理（无后端）、非破坏性编辑、微信内闭环分享。
 
-> 状态：**已定稿** ｜ 最后更新：2026-09-12 ｜ 关联代码：未实现（设计阶段）
+> 状态：**实现中** ｜ 最后更新：2026-09-12 ｜ 关联代码：`miniprogram/workers/render/**`、`miniprogram/core/**`
 >
-> **尚未开始编码。** 下一步是 [M0 技术验证 Spike](./docs/02-platform-capability.md#5-待实测验证清单spike-任务)，通过后才进入实现。
+> **已开始编码。** 纯逻辑层（WAV 编解码、DSP、EDL、峰值金字塔、分块渲染引擎）已实现并有 219 项 Node 单测；
+> 平台行为验证（[M0 Spike](./docs/02-platform-capability.md#5-待实测验证清单spike-任务)，13 项待跑）与导入/录音/播放/UI 待完成。
 >
 > ⚠️ 任何开发/改动前先读 [AGENTS.md](./AGENTS.md)（开发规范）。
+
+## 开发
+
+```bash
+npm install
+npm run check        # typecheck + lint + 219 项单测
+npm run bench        # DB-12：3 分钟音频的处理链性能基准
+npm run mp:preview   # 生成真机预览二维码（需 mp.config.json，见 docs/02 §5）
+npm run mp:upload    # 上传体验版
+```
 
 ## 文档
 
@@ -45,4 +56,4 @@
 - 怎么做界面 → [04](./docs/04-ui-ux.md)
 - 何时做什么、验收标准、合规 → [06](./docs/06-engineering-roadmap.md)
 
-**下一步：M0 技术验证**（14 项平台行为，M1 的硬前置）→ [02 §5 Spike 清单](./docs/02-platform-capability.md#5-待实测验证清单spike-任务)
+**下一步：M0 技术验证**（13 项平台行为，实验页已就绪）→ [02 §5 Spike 清单](./docs/02-platform-capability.md#5-待实测验证清单spike-任务)

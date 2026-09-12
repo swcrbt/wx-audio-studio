@@ -9,12 +9,15 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "bench": "vitest bench --run",
+    "mp:preview": "node scripts/mp-preview.mjs",
+    "mp:upload": "node scripts/mp-preview.mjs --upload",
     "check": "npm run typecheck && npm run lint && npm run test"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
     "eslint": "^9.13.0",
     "miniprogram-api-typings": "^5.2.3",
+    "miniprogram-ci": "^2.1.31",
     "prettier": "^3.3.3",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.12.0",

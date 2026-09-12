@@ -30,54 +30,34 @@ wx-audio-studio/
 │   │   ├── progress-task/
 │   │   └── empty-state/
 │   ├── workers/                       ★ `app.json` 的 `workers` 目录：Worker 内只能 require 本目录内的文件
-│   │   └── render/                   Worker 入口 + 渲染所需的全部纯计算代码
-│   │       ├── index.ts              Worker 入口（onMessage → 分块渲染 → 回传）
-│   │       ├── render.ts             ★ 分块渲染（EDL 求值 + 混音，纯计算）
-│   │       ├── codec/
-│   │       │   ├── wav.ts            WAV 头读写、Float↔Int16
-│   │       │   ├── resample.ts
-│   │       │   └── encoder.ts        WAV / MP3(lamejs) 编码
-│   │       ├── dsp/                  ★ 纯 DSP 函数（单测重点）
-│   │       │   ├── gain.ts · fade.ts · pan.ts
-│   │       │   ├── biquad.ts · eq.ts
-│   │       │   ├── compressor.ts · gate.ts · limiter.ts
-│   │       │   ├── fft.ts · spectral.ts（谱减降噪）
-│   │       │   ├── wsola.ts（变速保音高）
-│   │       │   ├── echo.ts · reverb.ts
-│   │       │   └── analyze.ts（peak/rms/silence/normalize/loudness）
-│   │       ├── peaks/
-│   │       │   └── build.ts · codec.ts（序列化）· sample.ts（按视口取点）
-│   │       └── edl/
-│   │           ├── ops.ts                所有 EDL 变更的唯一入口（含 clamp/排序）
-│   │           ├── query.ts              时长推导、区间相交查询
-│   │           └── validate.ts           加载校验与自动修复
-│   ├── core/                         ★ 平台适配 + 主线程调度（纯计算层已移至 `workers/render/`，见 ADR-0001）
-│   │   ├── types.ts                  全部数据模型类型（仅类型；Worker 侧用 `import type` 引入）
-│   │   ├── engine/
-│   │   │   ├── controller.ts         主线程调度 + 文件 I/O
-│   │   │   └── worker-protocol.ts    消息类型定义（主线程与 Worker 共用的唯一定义处）
+│   │   ├── render/                   Worker 入口 + 渲染所需的全部纯计算代码
+│   │   │   ├── index.ts              Worker 入口（onMessage → 分块渲染 → 回传）
+│   │   │   ├── render.ts             ★ 分块渲染（EDL 求值 + 混音，纯计算）
+│   │   │   ├── codec/                wav.ts（头读写与样本转换）· resample.ts · encoder.ts
+│   │   │   ├── dsp/                  gain · fade · biquad · limiter · analyze（后续：compressor · gate · fft · wsola · echo · reverb）
+│   │   │   ├── peaks/                build.ts · codec.ts · sample.ts
+│   │   │   └── edl/                  ops.ts（变更唯一入口）· query.ts · validate.ts
+│   │   └── spike/                    M0 专用测试 Worker（探测 Worker 内可用能力，M0 后删除）
+│   ├── spikes/                       M0 实验页（**独立分包**，M0 后整包删除）
+│   │   ├── index/                    实验列表页（逐项运行 + 一键复制结果）
+│   │   └── runner/                   各实验（cases/）· 结果导出 · Worker 客户端
+│   ├── core/                         ★ 平台适配 + 主线程调度（纯计算层在 `workers/render/`，见 ADR-0001）
+│   │   ├── types.ts                  全部数据模型类型（仅类型声明）
+│   │   ├── engine/                   controller.ts（调度与 I/O）· worker-protocol.ts（消息唯一定义处）
 │   │   ├── history/                  命令模式撤销栈
-│   │   ├── audio/
-│   │   │   ├── import.ts             导入管线（解码→重采样→落盘）
-│   │   │   └── record.ts             录音（PCM 分帧 → 流式落盘）
-│   │   ├── fs/
-│   │   │   ├── paths.ts              路径唯一构造入口（禁止在别处拼路径）
-│   │   │   ├── io.ts · errors.ts     通用读写（含原子写 rename）· 错误码翻译文案
-│   │   │   ├── wav-file.ts           WAV 分块读写（fd + position）、流式写头回填
-│   │   │   ├── store.ts              工程索引 index.json（含损坏重建）
-│   │   │   └── quota.ts              容量统计与清理（200MB 配额）
-│   │   ├── player/                   播放器封装（InnerAudioContext / WebAudio 两种）
-│   │   └── caps.ts                   基础库与设备能力探测（性能模式决策）
-│   ├── utils/                        format（时间/体积/dB）、throttle、dom 查询助手
+│   │   ├── audio/                    import.ts（导入管线）· record.ts（录音管线）
+│   │   ├── fs/                       paths · io · errors · wav-file · store · quota
+│   │   ├── player/                   播放器封装（InnerAudioContext / WebAudio）
+│   │   └── caps.ts                   基础库与设备能力探测
+│   ├── utils/                        logger · format · throttle · dom 查询助手
 │   └── assets/                       图标、插画（注意主包体积）
-├── tests/                            Node 端单测（Vitest，直接 import `miniprogram/workers/render/**`）
-│   ├── dsp/*.test.ts
-│   ├── edl/*.test.ts
-│   ├── peaks/*.test.ts
-│   └── engine/*.test.ts
-├── spikes/                           M0 验证脚本（可在开发者工具里跑的实验页）
+├── tests/                            Node 端单测与基准（Vitest）
+│   ├── codec/ · dsp/ · edl/ · peaks/ · engine/ · history/
+│   └── bench/render.bench.ts         DB-12 性能基准（`npm run bench`）
+├── scripts/
+│   └── mp-preview.mjs                真机预览二维码 / 体验版上传（miniprogram-ci）
 ├── project.config.json
-├── package.json / tsconfig.json / .eslintrc / vitest.config.ts
+├── package.json / tsconfig.json / eslint.config.mjs / vitest.config.ts
 └── README.md
 ```
 
@@ -105,7 +85,8 @@ wx-audio-studio/
 | UI | 原生 WXML/WXSS + 自定义组件 | 不引入 UI 库（体积与可控性） |
 | 测试 | **Vitest**（Node 环境） | 只测纯逻辑层（`workers/render/**`，与平台解耦），覆盖 DSP、EDL、峰值、渲染调度 |
 | 静态检查 | ESLint + Prettier | `no-restricted-imports` 强制纯逻辑层不许引 wx、不许 require `workers/render/` 目录外的路径 |
-| 构建 | 微信开发者工具内置 TS 编译（无额外构建步骤） | MVP 用工具链最简方案；⚠️ `workers/` 目录内 `.ts` 的编译支持待 [DB-05](./02-platform-capability.md#5-待实测验证清单spike-任务) 确认，若不可用则回退 [ADR-0001](./adr/0001-worker-code-packaging.md) 的方案 B |
+| 构建 | 微信开发者工具内置 TS 编译（无额外构建步骤） | MVP 用工具链最简方案；⚠️ `workers/` 目录内 `.ts` 的编译支持由 [DB-05](./02-platform-capability.md#5-待实测验证清单spike-任务) 验证，若不可用则回退 [ADR-0001](./adr/0001-worker-code-packaging.md) 的方案 B |
+| 真机调试与上传 | `miniprogram-ci`（`npm run mp:preview` / `npm run mp:upload`） | 无 PC 微信开发者工具时的通道：本地生成预览二维码，手机微信「扫一扫 → 右上角相册 → 选二维码图片」打开。凭据放 `mp.config.json`（已在 `.gitignore`） |
 | 依赖 | 默认**零运行时依赖**；`lamejs` 仅 P1 按需引入 | 主包体积与供应链安全 |
 
 ### 2.1 测试策略

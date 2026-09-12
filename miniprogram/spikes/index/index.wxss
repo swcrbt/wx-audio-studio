@@ -1,0 +1,77 @@
+.page {
+  padding: 24rpx 24rpx 160rpx;
+}
+
+.env {
+  font-size: 22rpx;
+  color: #8a8f98;
+  word-break: break-all;
+  margin-bottom: 16rpx;
+}
+
+.tip {
+  font-size: 24rpx;
+  color: #b6bcc6;
+  background: #1a1d23;
+  border-radius: 12rpx;
+  padding: 16rpx;
+  margin-bottom: 20rpx;
+  white-space: pre-wrap;
+}
+
+.toolbar {
+  display: flex;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.case {
+  background: #1a1d23;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.case-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  margin-bottom: 8rpx;
+}
+
+.case-id {
+  color: #4c9aff;
+  margin-right: 12rpx;
+}
+
+.case-meta {
+  font-size: 22rpx;
+  color: #8a8f98;
+  margin-bottom: 6rpx;
+}
+
+.run-btn {
+  margin: 12rpx 0;
+}
+
+.result {
+  font-family: monospace;
+  font-size: 22rpx;
+  color: #cfe3ff;
+  background: #11141a;
+  border-radius: 8rpx;
+  padding: 16rpx;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.log {
+  font-family: monospace;
+  font-size: 22rpx;
+  color: #ffb454;
+  margin: 16rpx 0;
+  word-break: break-all;
+}
+
+.copy-btn {
+  margin-top: 24rpx;
+}

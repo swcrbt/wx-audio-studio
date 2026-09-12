@@ -1,0 +1,30 @@
+<view class="page">
+  <view class="env">{{env}}</view>
+
+  <view class="tip">
+    逐项运行实验；全部跑完后点底部「复制全部结果」，把文本发回给开发者。\n
+    标记「需真机」的项在开发者工具上跑没有意义。
+  </view>
+
+  <view class="toolbar">
+    <button size="mini" type="primary" bindtap="onRunAll" disabled="{{running}}">全部运行</button>
+    <button size="mini" bindtap="onClear" disabled="{{running}}">清空结果</button>
+  </view>
+
+  <view class="case" wx:for="{{cases}}" wx:key="id">
+    <view class="case-title">
+      <text class="case-id">{{item.id}}</text>
+      <text>{{item.title}}</text>
+    </view>
+    <view class="case-meta">通过标准：{{item.criteria}}</view>
+    <view class="case-meta">
+      阻塞：{{item.blocks}}<text wx:if="{{item.needsDevice}}"> · 需真机</text>
+    </view>
+    <button class="run-btn" size="mini" bindtap="onRun" data-id="{{item.id}}" disabled="{{running}}">运行</button>
+    <view class="result" wx:if="{{item.resultText}}">{{item.resultText}}</view>
+  </view>
+
+  <view class="log" wx:if="{{logText}}">{{logText}}</view>
+
+  <button class="copy-btn" type="primary" bindtap="onCopyAll">复制全部结果</button>
+</view>

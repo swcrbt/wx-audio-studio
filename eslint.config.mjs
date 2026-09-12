@@ -12,6 +12,23 @@ export default tseslint.config(
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
+    files: ['**/*.ts'],
+    // TS 编译器已经负责“未定义标识符”的检查，JS 规则在这里只会误报
+    rules: { 'no-undef': 'off' },
+  },
+  {
+    // Node 侧脚本（上传/预览等），非小程序运行环境
+    files: ['scripts/**/*.mjs', '*.mjs', '*.js'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+      },
+    },
+  },
+  {
     files: ['miniprogram/workers/render/**/*.ts'],
     rules: {
       '@typescript-eslint/no-restricted-imports': [

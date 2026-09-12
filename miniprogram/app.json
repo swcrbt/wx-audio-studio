@@ -9,6 +9,14 @@
     "pages/settings/settings"
   ],
   "workers": "workers",
+  "subPackages": [
+    {
+      "root": "spikes",
+      "pages": [
+        "index/index"
+      ]
+    }
+  ],
   "window": {
     "backgroundTextStyle": "dark",
     "navigationBarBackgroundColor": "#14161a",
