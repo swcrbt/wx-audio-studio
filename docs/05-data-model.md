@@ -1,6 +1,6 @@
 # 05 · 数据模型与本地存储
 
-> 状态：**已定稿** ｜ 最后更新：2026-09-12 ｜ 关联代码：未实现（设计阶段，规划于 `miniprogram/core/types.ts`、`workers/render/edl/`、`core/fs/`）
+> 状态：**实现中** ｜ 最后更新：2026-09-12 ｜ 关联代码：`miniprogram/core/types.ts`（类型已落地）、`workers/render/edl/`、`core/fs/`
 >
 > **本文负责**：EDL 类型与字段语义、工程 JSON 结构、存储布局与命名、容量与清理策略、撤销重做、自动保存与版本迁移。
 > **本文不负责**：平台文件 API 限制与配额 → [02](./02-platform-capability.md)；DSP 与渲染 → [03](./03-audio-engine.md)；页面如何呈现 → [04](./04-ui-ux.md)；性能指标 → [06](./06-engineering-roadmap.md)。

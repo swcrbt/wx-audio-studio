@@ -1,6 +1,6 @@
 # 03 · 音频引擎架构与 DSP 算法
 
-> 状态：**已定稿** ｜ 最后更新：2026-09-12 ｜ 关联代码：未实现（设计阶段，规划于 `miniprogram/workers/render/`、`miniprogram/core/audio/`）
+> 状态：**实现中** ｜ 最后更新：2026-09-12 ｜ 关联代码：`miniprogram/workers/render/codec/wav.ts`、`workers/render/dsp/{gain,fade}.ts`、`workers/render/peaks/*.ts`（其余待实现）
 >
 > **本文负责**：中间格式、导入与录音管线、峰值结构、分块渲染调度、DSP 算法与参数、播放与试听策略、模块接口、错误降级。
 > **本文不负责**：平台能力与限制（版本、格式支持、内存上限） → [02](./02-platform-capability.md)；EDL 字段与存储布局 → [05](./05-data-model.md)；性能验收指标 → [06](./06-engineering-roadmap.md)；交互与视觉 → [04](./04-ui-ux.md)。
@@ -146,34 +146,40 @@ export function floatToInt16(src: Float32Array, dst: Int16Array, offset = 0): vo
 
 ```
 level 0（基础桶）：1024 samples/bucket
-level 1：4 × 1024 = 4096
-level 2：16 × 1024
+level 1：2048（= 2 × 1024）
+level 2：4096
 ...
-level N：直到 bucket 数 < 容器宽度
+level N：bucketSize = BASE_BUCKET << N，逐级构建到只剩 1 个桶
 ```
 
-存储形态（二进制，便于分块 read）：
+> 为什么是 ×2 而不是 ×4：上级由**相邻 2 个桶合并**得到（见 §4.2），因此 bucketSize 逐级翻倍。
+> 合并只取 min 的较小者与 max 的较大者，**相对本级无精度损失**。
+
+存储形态（二进制，便于分块 read；字段宽度与字节序定义见 `workers/render/peaks/codec.ts`）：
 
 ```
-header: magic('PK01') | version | channels | baseBucket | levelCount | 每级 bucket 数[]
-body  : 各level按顺序排列，每 bucket 为 int16 min + int16 max（交错）
+header: magic('PK01', 4B) | version(uint16) | channels(uint16) | baseBucket(uint32)
+        | levelCount(uint16) | reserved(uint16, 置 0) | 每级 bucket 数[]（uint32 × levelCount）
+body  : 各 level 按顺序排列，每 bucket 为 int16 min + int16 max（交错，小端）
 ```
+
+`bucketSize` **不落盘**：它等于 `baseBucket << level`，存两份会带来不一致风险（AGENTS §0.7）。
 
 ### 4.2 构建算法
 
 ```ts
-// core/peaks/build.ts
+// workers/render/peaks/build.ts
 const BASE_BUCKET = 1024;
 
-export function buildPeaksLevel0(pcm: Int16Array): Int16Array {
-  const bucketCount = Math.ceil(pcm.length / BASE_BUCKET);
-  const out = new Int16Array(bucketCount * 2); // [min, max] 交替
+export function buildPeaksLevel0(pcm: Int16Array, baseBucket = BASE_BUCKET): Int16Array {
+  const bucketCount = Math.ceil(pcm.length / baseBucket);
+  const out = new Int16Array(bucketCount * 2); // [min, max] 交错
   for (let b = 0; b < bucketCount; b++) {
-    const start = b * BASE_BUCKET;
-    const end = Math.min(start + BASE_BUCKET, pcm.length);
+    const start = b * baseBucket;
+    const end = Math.min(start + baseBucket, pcm.length);
     let min = 32767, max = -32768;
     for (let i = start; i < end; i++) {
-      const v = pcm[i];
+      const v = pcm[i] ?? 0;
       if (v < min) min = v;
       if (v > max) max = v;
     }
@@ -182,15 +188,26 @@ export function buildPeaksLevel0(pcm: Int16Array): Int16Array {
   return out;
 }
 
-// 上级由下级两两（或 4 个）合并，min 取最小、max 取最大 —— O(n) 且无精度损失顾虑
+// 上级由下级「每 2 个桶合并为 1 个」得到（bucketSize ×2），O(n) 且无精度损失顾虑。
+// 桶数为奇数时，最后一个桶单独成为一个上级桶（取原值）。
 export function buildUpperLevel(lower: Int16Array): Int16Array {
-  const out = new Int16Array(lower.length); // 每 2 个 bucket -> 1 个（即 4 倍采样率跨度）
-  for (let i = 0; i < lower.length; i += 4) {
-    out[i / 2] = Math.min(lower[i], lower[i + 2]);
-    out[i / 2 + 1] = Math.max(lower[i + 1], lower[i + 3]);
+  const lowerCount = lower.length >> 1;
+  if (lowerCount === 0) return new Int16Array(0);
+  const upperCount = Math.ceil(lowerCount / 2);
+  const out = new Int16Array(upperCount * 2); // 输出长度 = 上级桶数 × 2，不多分配
+  for (let b = 0; b < upperCount; b++) {
+    const i = b * 4;
+    const min0 = lower[i] ?? 0, max0 = lower[i + 1] ?? 0;
+    const min1 = i + 3 < lower.length ? (lower[i + 2] ?? 0) : min0;
+    const max1 = i + 3 < lower.length ? (lower[i + 3] ?? 0) : max0;
+    out[b * 2] = Math.min(min0, min1);
+    out[b * 2 + 1] = Math.max(max0, max1);
   }
   return out;
 }
+
+// 逐级构建直到只剩 1 个桶或达到 maxLevels（默认 16）
+export function buildPyramid(pcm, opts): PeaksLevel[] { /* 见实现 */ }
 ```
 
 ### 4.3 绘制时的选择与采样

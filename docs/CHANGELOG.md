@@ -17,6 +17,7 @@
 
 | 日期 | 文档 | 类型 | 摘要 | 关联代码 |
 | --- | --- | --- | --- | --- |
+| 2026-09-12 | `docs/03` `docs/05` | 修改 | 实现回填：§4.1 峰值层级表更正为“逐级 ×2”（原写 ×4，与 §4.2 合并算法矛盾）、补全二进制头字节布局（字段宽度/保留位/`bucketSize` 不落盘）；§4.2 参考实现修正 `buildUpperLevel` 的输出长度（原实现多分配一倍）与奇数桶处理；两份文档状态改为“实现中”并回填真实代码路径 | `workers/render/peaks/build.ts` `codec.ts` `sample.ts` |
 | 2026-09-12 | `docs/02` | 修改 | **官方文档逐条核对与证据回填**（核对日期 2026-09-12）：新增 [§1.7 官方来源清单](./02-platform-capability.md#17-官方来源清单)（S1～S20，每条含接口名与官方 URL）并为 §1.1～§1.6 每张表加“来源”列；修正 `benchmarkLevel` 的获取接口（`getAppBaseInfo` 无此字段 → `getDeviceInfo`，且 3.4.5 起改用 `getDeviceBenchmarkInfo`）；删除无官方出处的“WebAudio 内存占用较大”断言；补登 `useWebAudioImplement`、`setInnerAudioOption` 不兼容 WebAudio、**本地用户文件+缓存文件合计 200MB 配额**、临时文件清理策略、`rename` 可用、Worker 官方限制（无 `wx` API、只能 require 目录内文件、单例、`useExperimentalWorker`、2.27.3 分包）、分包 2M/30M、`lazyCodeLoading` 版本；缩窄 DB-03/05/09/14；§3 补存储配额约束；§4 重写 R-04 | [ADR-0001](./adr/0001-worker-code-packaging.md) |
 | 2026-09-12 | `docs/adr/0001-worker-code-packaging.md` | 新增 | 新建 ADR：因官方限制“Worker 只能 require Worker 目录内文件”，渲染引擎与其依赖的纯计算层（`dsp/`、`edl/`、`peaks/`、`codec/`）改为**物理位于 `miniprogram/workers/render/`**，主线程与单测反向复用同一份源码（方案 A，已接受） | `miniprogram/workers/render/` |
 | 2026-09-12 | `AGENTS.md` `docs/03` `docs/05` `docs/06` `docs/README` | 修改 | 同步方案 A 的目录变更：AGENTS §1 分层规则改为按 `workers/render/**` 表述（新增“禁止 require 目录外路径”“消息类型仅 `import type`”“允许反向 require”三条），并同步 §2.1/§3.1/§7/§12；`docs/06 §1` 目录树与 §1.1 分层映射、§2/§2.1 测试与工具链路径、`docs/03 §5.2/§8`、`docs/05 §9` 路径同步；`docs/README` 文档地图加 ADR 行 | — |
