@@ -1,3 +1,145 @@
 .page {
-  padding: 24rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  padding: 48rpx 32rpx;
+  box-sizing: border-box;
+  background-color: #12151a;
+  color: #ffffff;
+}
+
+.perm-card {
+  width: 100%;
+  margin-top: 120rpx;
+  padding: 40rpx 32rpx;
+  border-radius: 24rpx;
+  background-color: #1c2029;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.perm-title {
+  font-size: 34rpx;
+  font-weight: 600;
+}
+
+.perm-desc {
+  font-size: 26rpx;
+  line-height: 40rpx;
+  color: #a8b0c0;
+  text-align: center;
+}
+
+.perm-btn {
+  margin-top: 16rpx;
+  width: 100%;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  border-radius: 24rpx;
+  background-color: #4c8dff;
+  font-size: 30rpx;
+}
+
+.perm-link {
+  font-size: 24rpx;
+  color: #4c8dff;
+  text-decoration: underline;
+}
+
+.timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  margin-bottom: 32rpx;
+}
+
+.elapsed {
+  font-size: 72rpx;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 2rpx;
+}
+
+.state-text {
+  font-size: 24rpx;
+  color: #8b93a3;
+}
+
+.wave {
+  width: 100%;
+  height: 320rpx;
+  border-radius: 16rpx;
+  background-color: #12151a;
+}
+
+.meter {
+  width: 100%;
+  height: 16rpx;
+  margin-top: 24rpx;
+  border-radius: 999rpx;
+  background-color: #1c2029;
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  border-radius: 999rpx;
+  background-color: #19c37d;
+  transition: width 120ms linear;
+}
+
+.meter-clip {
+  background-color: #ff4d4f;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: 24rpx;
+  font-size: 22rpx;
+  color: #8b93a3;
+}
+
+.meta-remaining {
+  font-variant-numeric: tabular-nums;
+}
+
+.actions {
+  display: flex;
+  gap: 24rpx;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 48rpx;
+}
+
+.btn {
+  flex: 1;
+  height: 96rpx;
+  line-height: 96rpx;
+  text-align: center;
+  border-radius: 24rpx;
+  background-color: #1c2029;
+  font-size: 32rpx;
+}
+
+.btn-primary {
+  background-color: #4c8dff;
+  flex: 2;
+}
+
+.btn-wide {
+  flex: 1;
+}
+
+.hint {
+  margin-top: 24rpx;
+  font-size: 24rpx;
+  color: #ff7a45;
+  text-align: center;
 }

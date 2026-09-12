@@ -432,7 +432,7 @@ gain = 10^((gainDb + makeupDb)/20)
 | 拖动播放头时的即时反馈 | 播放预览文件 + `seek()`（`currentTime` 可写，2.26.2+） | 避免每秒重渲染 |
 | 短片段循环试听（调参数时） | WebAudio `BufferSourceNode.start(0, offset, duration)` + `loop` | 毫秒级精度、可无缝循环 |
 | 效果 A/B 对比 | 渲染两份短预览（干/湿），`BufferSourceNode` 交替播放 | 确定性强于实时链路 |
-| 录音时的监听/电平 | `AnalyserNode` + Canvas 电平表（不做耳返，避免回授） | 简单可靠 |
+| 录音时的监听/电平 | 从 `RecorderManager` 的 `onFrameRecorded` 分帧数据计算峰值/ RMS + Canvas 波形与电平表（**不做耳返**，避免回授） | 平台无麦克风输入节点（`AnalyserNode` 拿不到录音流，依据见 [02 §1.2](./02-platform-capability.md#12-录音)）；分帧数据本来就要写盘，顺带算电平零额外开销 |
 
 **缓存失效规则**：任何编辑操作把对应区间的预览标记为脏；播放时若命中脏区间 → 先渲染该区间（约 100～500ms）再播，UI 显示“正在准备…”。
 

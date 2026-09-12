@@ -1,1 +1,37 @@
-<view class="page"></view>
+<view class="page">
+  <!-- 首次进入的麦克风用途说明（合规要求） -->
+  <view wx:if="{{showPermissionCard}}" class="perm-card">
+    <text class="perm-title">需要麦克风权限</text>
+    <text class="perm-desc">录音仅保存在这台手机上，用于剪辑与导出；不会上传到任何服务器，也不会用于其他用途。</text>
+    <view class="perm-btn" bindtap="handleRequestPermission">允许使用麦克风</view>
+    <view wx:if="{{permissionDenied}}" class="perm-link" bindtap="handleOpenSetting">已拒绝过？去设置里开启</view>
+  </view>
+
+  <block wx:else>
+    <view class="timer">
+      <text class="elapsed">{{elapsedLabel}}</text>
+      <text class="state-text">{{stateText}}</text>
+    </view>
+
+    <canvas type="2d" id="wave" class="wave"></canvas>
+
+    <view class="meter">
+      <view class="meter-fill {{clipped ? 'meter-clip' : ''}}" style="width:{{level}}%"></view>
+    </view>
+
+    <view class="meta">
+      <text>PCM · 44.1kHz · 单声道 · 上限 10 分钟</text>
+      <text class="meta-remaining">剩余 {{remainingLabel}}</text>
+    </view>
+
+    <view class="actions">
+      <view wx:if="{{phase === 'idle'}}" class="btn btn-primary btn-wide" bindtap="handleStart">开始录音</view>
+      <block wx:else>
+        <view class="btn" bindtap="handleTogglePause">{{phase === 'paused' ? '继续' : '暂停'}}</view>
+        <view class="btn btn-primary" bindtap="handleStop">完成</view>
+      </block>
+    </view>
+
+    <view wx:if="{{hint}}" class="hint">{{hint}}</view>
+  </block>
+</view>

@@ -59,6 +59,23 @@ export interface RecordOptions {
   /** 录音支持的输入源（仅 Android 可用的取值会被平台忽略）。 */
   audioSource?: string;
   onProgress?: (progress: RecordProgress) => void;
+  /**
+   * 分帧回调：实时电平表与滚动波形用。
+   *
+   * 在写盘串行队列里触发（与帧顺序一致），回调内保持同步且轻量：
+   * 分帧间隔约 0.7s（64KB / 44.1kHz 单声道），但页面不应该在这里做重活。
+   */
+  onFrame?: (frame: RecordFrame) => void;
+}
+
+/** 单帧 PCM 及其累计信息。 */
+export interface RecordFrame {
+  /** 交错 Int16（长度 = 帧采样数 × 声道数）。仅回调期间有效，不要保存引用。 */
+  pcm: Int16Array;
+  /** 累计已接收的帧数。 */
+  frameCount: number;
+  /** 累计已录采样帧数。 */
+  totalFrames: number;
 }
 
 export interface RecordProgress {
@@ -281,6 +298,7 @@ export class Recorder {
         if (!frame || !this.writer) break;
         const pcm = new Int16Array(frame);
         this.accumulator?.push(pcm);
+        this.options.onFrame?.({ pcm, frameCount: this.frameCount, totalFrames: this.frames });
         await this.writer.write(pcm);
       }
     } catch (error) {

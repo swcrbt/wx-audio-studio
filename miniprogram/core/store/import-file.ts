@@ -11,6 +11,7 @@ import { readProjectFile, readStoreIndex, upsertProjectEntry, writeProjectFile }
 import { migrateProject } from '../../workers/render/edl/validate';
 import { ProjectStore, createFsProjectPersist } from './project-store';
 import { commitAddAsset } from './add-asset';
+import { createProject } from './create-project';
 import { logger } from '../../utils/logger';
 
 export type ImportStageName = 'read' | 'decode' | 'process' | 'peaks' | 'done';
@@ -50,6 +51,22 @@ export async function importFileIntoProject(
   store.dispose();
 
   return { asset: result.asset, result };
+}
+
+/**
+ * 用一份已落盘的素材新建工程（录音结束时用）。
+ *
+ * 传入的是已经生成好的 `Asset`（录音管线已写好 WAV 与峰值），这里只负责登记与挂载。
+ */
+export async function createProjectWithAsset(asset: Asset, options: { name: string }): Promise<Project> {
+  const project = await createProject({ name: options.name, withDefaultTrack: true });
+  const store = new ProjectStore({ project, persist: createFsProjectPersist() });
+
+  commitAddAsset(store, asset, { label: '录音' });
+  await store.flush();
+  const updated = store.project;
+  store.dispose();
+  return updated;
 }
 
 /** 重命名工程（列表页操作）：读盘 → 改名 → 写盘 → 更新索引。 */

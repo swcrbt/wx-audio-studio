@@ -9,7 +9,7 @@
 
 ## 1. 平台能力总表
 
-> **来源规则**：本节所有平台事实均取自微信官方文档，逐条附来源编号（`S1`～`S20`），编号对应的接口名与 URL 见 [§1.7 官方来源清单](#17-官方来源清单)（核对日期：2026-09-12）。
+> **来源规则**：本节所有平台事实均取自微信官方文档，逐条附来源编号（`S1`～`S21`），编号对应的接口名与 URL 见 [§1.7 官方来源清单](#17-官方来源清单)（核对日期：2026-09-12）。
 > 官方文档未覆盖、只能靠真机实测的行为，一律标注 `⚠️ 待验证` 并归入 [§5 Spike 清单](#5-待实测验证清单spike-任务)；**禁止**把推断写成事实（见 [AGENTS §10](../AGENTS.md#10-文档编写规范)）。
 
 ### 1.1 音频解码与处理
@@ -58,6 +58,7 @@
 | 码率 | `encodeBitRate` | 默认 48000；**与采样率强绑定**，如 44100 只接受 64000～320000，配错直接录音失败 | [S5](#17-官方来源清单) |
 | 输入源 | `audioSource` | 2.1.0+；取值受平台限制（`buildInMic`/`headsetMic` 仅 iOS，`mic`/`camcorder`/`voice_communication`/`voice_recognition` 仅 Android）；可用取值由 `wx.getAvailableAudioSources()` 返回 | [S5](#17-官方来源清单) [S19](#17-官方来源清单) |
 | 事件 | `onStart` / `onPause` / `onResume` / `onStop` / `onFrameRecorded` / `onError` / `onInterruptionBegin` / `onInterruptionEnd` | `onFrameRecorded` 仅在设置 `frameSize` 时回调，回调字段为 `res.frameBuffer`；中断事件覆盖微信语音/视频通话抢占场景 | [S6](#17-官方来源清单) |
+| 实时电平 / 波形 | `onFrameRecorded` 的 PCM 分帧 | **`WebAudioContext` 不提供麦克风输入节点**（官方接口清单只有节点构造、解码、离线能力，无 `getUserMedia` / `createMediaStreamSource` 等等价接口），因此 `AnalyserNode` 拿不到录音流；实时电平与波形只能从分帧数据计算 | [S21](#17-官方来源清单) |
 
 ⚠️ **已知社区反馈（非官方结论）**：有开发者报告 `getRecorderManager` 产出的 mp3/wav 文件"头不规范"，导致后端 SDK 校验失败。
 → **本项目的规避设计**：录音一律使用 `format: 'PCM'` + `frameSize`，由我们自己拼接标准 WAV 头落盘（头部写法见 [03 §2](./03-audio-engine.md#2-中间格式规范)）。这样既避开封装不可靠的问题，又天然支持流式写入与内存控制。
@@ -157,7 +158,7 @@
 
 ### 1.7 官方来源清单
 
-> 本节是 [§1](#1-平台能力总表) 中 `S1`～`S20` 引用的展开处，**核对日期：2026-09-12**。官方页面如更新，以官方为准并同步修订本节（见 [AGENTS §10](../AGENTS.md#10-文档编写规范)）。
+> 本节是 [§1](#1-平台能力总表) 中 `S1`～`S21` 引用的展开处，**核对日期：2026-09-12**。官方页面如更新，以官方为准并同步修订本节（见 [AGENTS §10](../AGENTS.md#10-文档编写规范)）。
 > 引用优先级：官方接口/框架文档 > 官方开放社区回复。当前仅 `S20` 属社区来源，已单独标注。
 
 | 编号 | 来源（官方页面） | URL |
@@ -182,6 +183,7 @@
 | S18 | `wx.saveFileToDisk` | https://developers.weixin.qq.com/miniprogram/dev/api/file/wx.saveFileToDisk.html |
 | S19 | `wx.chooseMessageFile`；`wx.chooseMedia`；`wx.getAvailableAudioSources` | https://developers.weixin.qq.com/miniprogram/dev/api/media/image/wx.chooseMessageFile.html<br>https://developers.weixin.qq.com/miniprogram/dev/api/media/video/wx.chooseMedia.html<br>https://developers.weixin.qq.com/miniprogram/dev/api/media/audio/wx.getAvailableAudioSources.html |
 | S20 | **官方开放社区回复**（非接口文档）：`createWebAudioContext` 曾为 Beta、Android 灰度；同帖后续官方回复"目前已全量" | https://developers.weixin.qq.com/community/develop/doc/000620660b0e1017081a6095e5d000 |
+| S21 | `WebAudioContext`（接口清单：无麦克风输入节点，因此录音实时电平只能取自 `onFrameRecorded`） | https://developers.weixin.qq.com/miniprogram/dev/api/media/audio/WebAudioContext.html |
 
 ## 2. 技术选型决策
 

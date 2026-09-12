@@ -17,6 +17,7 @@
 
 | 日期 | 文档 | 类型 | 摘要 | 关联代码 |
 | --- | --- | --- | --- | --- |
+| 2026-09-12 | `docs/02` `docs/03` `docs/06` | 修正 | **平台事实修正**：`WebAudioContext` 不提供麦克风输入节点，`AnalyserNode` 拿不到录音流 → `docs/02 §1.2` 新增“实时电平/波形”行与来源 **S21**（§1 与 §1.7 的编号范围同步改为 S1～S21）；`docs/03 §7` 录音监听方案改为“从 `onFrameRecorded` 分帧计算峰值/RMS”；`docs/06 §1` 目录树补 `view/rolling-waveform.ts` | `core/view/rolling-waveform.ts` `pages/record/record.ts` |
 | 2026-09-12 | `docs/04` `docs/06` | 新增 | 编辑器/主页落地：`docs/04` §3 补“M1 实现范围”（单素材切割视图）与 §7 组件落地状态；`docs/06` §1 目录树补 `core/view/`，§1.1 分层表拆出“视口与手势几何”，**§4.1 新增豁免登记表**（波形缩放手势的整幅重绘 + 播放位置叠加层重画） | `components/waveform-canvas/**` `pages/{index,editor}/**` `core/view/viewport.ts` `core/store/**` |
 | 2026-09-12 | `docs/03` `docs/06` | 新增 | 播放层落地：`docs/03` §7 补实现位置（transport / clip-preview / preview-cache）与脏区间调度说明；`docs/06` §1 目录树细化 `core/player/` 与 `tests/player/` | `core/player/*.ts` |
 | 2026-09-12 | `docs/05` `docs/06` | 新增 | 工程状态层：`docs/05` §7 补实现位置（命令必须经 `ProjectStore.commit`）；§4.1 索引新增 `lastOpenedProjectId`（会话恢复）；`docs/06` §1 目录树补 `core/store/` 与 `tests/{store,audio}/`，§1.1 分层表将 `core/store/` 归入“主线程调度与状态” | `core/store/project-store.ts` `core/fs/store.ts` |

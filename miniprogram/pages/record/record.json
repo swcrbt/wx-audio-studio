@@ -1,3 +1,7 @@
 {
-  "navigationBarTitleText": "record"
+  "navigationBarTitleText": "录音",
+  "navigationBarBackgroundColor": "#12151A",
+  "navigationBarTextStyle": "white",
+  "backgroundColor": "#12151A",
+  "disableScroll": true
 }
