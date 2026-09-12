@@ -11,6 +11,7 @@
     "bench": "vitest bench --run",
     "mp:preview": "node scripts/mp-preview.mjs",
     "mp:upload": "node scripts/mp-preview.mjs --upload",
+    "mp:doctor": "node scripts/mp-doctor.mjs",
     "check": "npm run typecheck && npm run lint && npm run test"
   },
   "devDependencies": {

@@ -267,17 +267,28 @@
 
 #### 怎么跑这些实验
 
-实验页在 `miniprogram/spikes/`（`app.json` 的独立分包，M0 完成后整包删除）：
+实验页在 `miniprogram/spikes/`（`app.json` 的独立分包，M0 完成后整包删除）。
+
+**凭据（二选一）**
+
+| 方式 | 获取 | 注意 |
+| --- | --- | --- |
+| 小程序测试号 | 手机浏览器打开 `https://mp.weixin.qq.com/wxamp/sandbox?doc=1`，微信扫码即得 appid（无需邮箱与实名） | 官方只描述“在开发者工具里用测试号预览”；**是否提供「代码上传密钥」需登录后台确认**，没有则本通道不可用 |
+| 个人主体小程序号 | 邮箱注册 → 邮箱验证 → 主体信息登记 → 「开发管理 → 开发设置 → 小程序代码上传」生成上传密钥 | 约 10–15 分钟；M0 阶段不需要提审与发布 |
+
+**步骤**
 
 ```
-① 在小程序后台生成上传私钥（开发管理 → 开发设置 → 小程序代码上传）
-② 本地建 mp.config.json（已在 .gitignore）：{ "appid": "wx...", "privateKeyPath": "./private.xxx.key" }
+① cp mp.config.example.json mp.config.json，填入 appid 与私钥文件路径
+② npm run mp:doctor    # 自检凭据与项目结构（不上传任何东西，也不打印私钥内容）
 ③ npm run mp:preview   # 生成 mp-qrcode.png（默认打开 spikes/index/index）
 ④ 手机微信「扫一扫 → 右上角相册 → 选 mp-qrcode.png」进入实验页
 ⑤ 逐项运行，点「复制全部结果」，把文本回填到本文件与对应章节（不靠截图）
 ```
 
-无网络/无凭据时，可先跑 Node 侧那部分（DB-12）：`npm run bench`。
+> 凭据文件（`mp.config.json` 与 `private.*.key`）已在 `.gitignore`，不入库也不应发给第三方。
+
+无凭据时可先跑 Node 侧那部分（DB-12）：`npm run bench`；若最终拿不到上传密钥，M0 的真机项必须改用 PC 版开发者工具（测试号即可真机预览）。
 
 | 编号 | 待验证问题 | 方法 | 通过标准 | 阻塞的功能 |
 | --- | --- | --- | --- | --- |
