@@ -45,6 +45,7 @@ wx-audio-studio/
 │   │   ├── types.ts                  全部数据模型类型（仅类型声明）
 │   │   ├── engine/                   controller.ts（调度与 I/O）· worker-protocol.ts（消息唯一定义处）
 │   │   ├── history/                  命令模式撤销栈
+│   │   ├── store/                    工程状态（EDL + 撤销栈 + 自动保存）
 │   │   ├── audio/                    import.ts（导入管线）· record.ts（录音管线）
 │   │   ├── fs/                       paths · io · errors · wav-file · store · quota
 │   │   ├── player/                   播放器封装（InnerAudioContext / WebAudio）
@@ -52,7 +53,7 @@ wx-audio-studio/
 │   ├── utils/                        logger · format · throttle · dom 查询助手
 │   └── assets/                       图标、插画（注意主包体积）
 ├── tests/                            Node 端单测与基准（Vitest）
-│   ├── codec/ · dsp/ · edl/ · peaks/ · engine/ · history/
+│   ├── codec/ · dsp/ · edl/ · peaks/ · engine/ · history/ · store/ · audio/
 │   └── bench/render.bench.ts         DB-12 性能基准（`npm run bench`）
 ├── scripts/
 │   └── mp-preview.mjs                真机预览二维码 / 体验版上传（miniprogram-ci）
@@ -71,7 +72,7 @@ wx-audio-studio/
 | --- | --- | --- |
 | `workers/render/dsp/` `workers/render/codec/` `workers/render/peaks/` `workers/render/edl/` | 纯逻辑（可在 Node 单测） | 仅 TypedArray / Math / 自身；**禁止** `wx.*`；**禁止** require 本目录之外的任何路径 |
 | `workers/render/render.ts` `workers/render/index.ts` | 渲染引擎与 Worker 入口 | 同目录纯逻辑 + 仅类型的协议定义 |
-| `core/engine/` `core/history/` | 主线程调度与状态 | 纯逻辑（反向 require `workers/render/**`）+ `core/fs` |
+| `core/engine/` `core/history/` `core/store/` | 主线程调度与状态 | 纯逻辑（反向 require `workers/render/**`）+ `core/fs` |
 | `core/audio/` `core/fs/` `core/player/` `core/caps.ts` | 平台适配 | `wx.*` 仅允许出现在这几处 |
 | `core/types.ts` | 数据模型类型 | 仅类型声明，无运行时代码 |
 | `pages/` `components/` | 视图与交互 | `core/**`，不直接触碰 `wx.*` 文件/音频 API |

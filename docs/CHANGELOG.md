@@ -17,6 +17,7 @@
 
 | 日期 | 文档 | 类型 | 摘要 | 关联代码 |
 | --- | --- | --- | --- | --- |
+| 2026-09-12 | `docs/05` `docs/06` | 新增 | 工程状态层：`docs/05` §7 补实现位置（命令必须经 `ProjectStore.commit`）；§4.1 索引新增 `lastOpenedProjectId`（会话恢复）；`docs/06` §1 目录树补 `core/store/` 与 `tests/{store,audio}/`，§1.1 分层表将 `core/store/` 归入“主线程调度与状态” | `core/store/project-store.ts` `core/fs/store.ts` |
 | 2026-09-12 | `docs/03` | 修改 | §3 录音落盘补“PC 处理”说明：PC 微信不支持设置 `sampleRate`，无法保证中间格式采样率，因此录音在 PC 上明确拒绝（需 PC 录音时先录后重采样）；关联代码回填 `core/audio/record.ts` | `core/audio/record.ts` |
 | 2026-09-12 | `docs/03` | 修改 | §4.1 明确峰值文件 body 的**多声道排列**（按声道分组，各声道级数与各级桶数必须一致，不一致时拒绝序列化）；§3 导入管线关联代码回填 `core/audio/import.ts` | `workers/render/peaks/codec.ts` `core/audio/import.ts` |
 | 2026-09-12 | `docs/02` | 修改 | §5「怎么跑」补全凭据获取的两条路径（小程序测试号 / 个人主体账号）与 `npm run mp:doctor` 自检步骤；明确凭据文件不入库、拿不到上传密钥时需改用 PC 开发者工具 | `scripts/mp-doctor.mjs` |

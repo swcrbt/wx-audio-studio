@@ -41,3 +41,8 @@ export const SNAP_GRID_SEC = 0.1;
 /** 片段与轨道增益的允许范围（dB）。 */
 export const MIN_GAIN_DB = -60;
 export const MAX_GAIN_DB = 12;
+
+/** 工程自动保存的防抖窗口。 */
+export const SAVE_DEBOUNCE_MS = 1000;
+/** 连续保存失败达到该次数后降级为只读。 */
+export const MAX_SAVE_FAILURES = 3;

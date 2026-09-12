@@ -25,6 +25,8 @@ export interface StoreProjectEntry {
 export interface StoreIndex {
   schemaVersion: number;
   projects: StoreProjectEntry[];
+  /** 最后一次打开的工程，用于首页“继续编辑”提示。 */
+  lastOpenedProjectId?: Id;
   stats: {
     assetsBytes: number;
     peaksBytes: number;
@@ -126,6 +128,18 @@ export async function upsertProjectEntry(
 /** 删除工程条目。 */
 export async function removeProjectEntry(index: StoreIndex, projectId: Id): Promise<StoreIndex> {
   const next: StoreIndex = { ...index, projects: index.projects.filter((item) => item.id !== projectId) };
+  await writeStoreIndex(next);
+  return next;
+}
+
+/** 记录/清除最后一次打开的工程（`null` 表示清除）。 */
+export async function setLastOpenedProjectId(index: StoreIndex, projectId: Id | null): Promise<StoreIndex> {
+  const next: StoreIndex = { ...index };
+  if (projectId === null) {
+    delete next.lastOpenedProjectId;
+  } else {
+    next.lastOpenedProjectId = projectId;
+  }
   await writeStoreIndex(next);
   return next;
 }

@@ -1,6 +1,6 @@
 # 05 · 数据模型与本地存储
 
-> 状态：**实现中** ｜ 最后更新：2026-09-12 ｜ 关联代码：`miniprogram/core/types.ts`、`core/history/`、`workers/render/edl/`、`core/fs/`
+> 状态：**实现中** ｜ 最后更新：2026-09-12 ｜ 关联代码：`miniprogram/core/types.ts`、`core/history/`、`core/store/`、`workers/render/edl/`、`core/fs/`
 >
 > **本文负责**：EDL 类型与字段语义、工程 JSON 结构、存储布局与命名、容量与清理策略、撤销重做、自动保存与版本迁移。
 > **本文不负责**：平台文件 API 限制与配额 → [02](./02-platform-capability.md)；DSP 与渲染 → [03](./03-audio-engine.md)；页面如何呈现 → [04](./04-ui-ux.md)；性能指标 → [06](./06-engineering-roadmap.md)。
@@ -277,6 +277,7 @@ export interface StoreIndex {
     thumbnailPeaksPath?: string;
     sizeBytes: number;          // 该项目相关文件总占用（估算，异步刷新）
   }>;
+  lastOpenedProjectId?: Id;     // 最后一次打开的工程，用于首页“继续编辑”
   stats: {
     assetsBytes: number;
     peaksBytes: number;
@@ -357,8 +358,10 @@ export interface Command {
 | 防抖 | 1s；导出/退出页面/`onHide` 时强制立即保存 |
 | 原子性 | 先写 `{id}.json.tmp` 再 `rename` —— 官方已确认 `FileSystemManager.rename` 支持本地路径且可移动文件（来源见 [02 §1.4](./02-platform-capability.md#14-文件系统)），**原标注的待验证项已关闭**；失败时回退"先写新文件 → 写成功后删旧" |
 | 崩溃恢复 | 启动时检查 `tmp/render-*.state` 与工程的 `updatedAt` 差异；发现"上次异常退出"提示"检测到未保存的编辑，是否恢复？" |
-| 会话恢复 | 记录 `lastOpenedProjectId`，首页顶部显示"继续编辑：播客第03期" |
-| 保存失败 | 提示"保存失败（存储空间不足）"+ 提供清理入口；连续失败 3 次降级为只读模式并明确告知 |
+| 会话恢复 | 记录 `lastOpenedProjectId`（字段定义见 §4.1），首页顶部显示“继续编辑：播客第03期” |
+| 保存失败 | 提示“保存失败（存储空间不足）”+ 提供清理入口；连续失败 3 次降级为只读模式并明确告知 |
+
+**实现位置**：状态与调度（防抖、串行保存、失败降级、视图状态）在 `core/store/project-store.ts`；索引读写与原子写在 `core/fs/store.ts`、`core/fs/io.ts`。命令提交必须经 `ProjectStore.commit`，UI 不得直接改 EDL。
 
 ## 8. 版本迁移
 
