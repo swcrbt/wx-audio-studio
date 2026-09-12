@@ -17,6 +17,8 @@
 
 | 日期 | 文档 | 类型 | 摘要 | 关联代码 |
 | --- | --- | --- | --- | --- |
+| 2026-09-12 | `AGENTS.md` | 新增 | §2.4 新增“注释只解释代码本身”：禁止用注释叙述设计文档的内容与章节号（唯一例外是算法公式、平台限制的外部出处短指针）；理由：把文档搬进注释会让改动两处维护，且读者在编辑器里看不到最新版文档。同时修正 §2.5 的表述 | 全部代码文件 |
+| 2026-09-12 | `docs/03` `docs/05` | 修改 | 关联代码回填：补上已实现的重采样（`codec/resample.ts`）、撤销栈（`core/history/`）与渲染调度（`core/engine/controller.ts`） | 同名路径 |
 | 2026-09-12 | `docs/06` | 修改 | 实现回填：§1 目录树补 `core/fs/io.ts`（通用读写与原子写）、`errors.ts`（错误码→用户文案）及各文件职责 | `miniprogram/core/fs/**` |
 | 2026-09-12 | `docs/03` | 修改 | 实现回填：§5.2 调度图与传输约定改为“素材请求/回传统一用**帧号**”（字节偏移由主线程按声道数换算），§8 接口草案同步为 `initJob(job)` / `planChunk` / `chunkBounds` / `renderChunk(state, chunkIndex, AssetPcmMap)` 与 `SUPPORTED_EFFECTS`；§6.6 效果链新增实现说明 | `workers/render/render.ts` `workers/render/index.ts` `core/engine/worker-protocol.ts` |
 | 2026-09-12 | `docs/05` `docs/06` | 修改 | 实现回填：`docs/05 §9` 新增“循环片段不参与区间切分”的 M1 取舍与理由；`docs/06 §2.1` 明确 EDL 不变量的正确表述（同轨片段**允许重叠**，交叉淡化需要） | `workers/render/edl/{query,ops,validate}.ts` |

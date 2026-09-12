@@ -1,20 +1,20 @@
 /**
- * 基础库与设备能力探测。属平台适配层，允许使用 `wx.*`（AGENTS §1）。
+ * 基础库与设备能力探测（平台适配层）。
  *
- * 接口与字段依据（唯一权威处：docs/02 §6，来源编号 S14 见 docs/02 §1.7）：
- * - 基础库版本：`wx.getAppBaseInfo().SDKVersion`（基础库 2.20.1 起；低版本降级 `wx.getSystemInfoSync`）
- * - 设备性能等级：`wx.getDeviceInfo().benchmarkLevel`（2.20.1 起，仅 Android；`-1` 未知）
- * - 官方声明：自基础库 3.4.5 起 `benchmarkLevel` 停止维护，改用 `wx.getDeviceBenchmarkInfo()`
- *   （返回 `benchmarkLevel` 与 `modelLevel`：1 高档 / 2 中档 / 3 低档 / 0 未知）
+ * 用到的接口与坑：
+ * - 基础库版本：`wx.getAppBaseInfo().SDKVersion`（2.20.1 起；低版本降级 `wx.getSystemInfoSync`）
+ * - 设备性能等级：`wx.getDeviceInfo().benchmarkLevel`（2.20.1 起，仅 Android；`-1` 表示未知）
+ * - 基础库 3.4.5 起 `benchmarkLevel` 停止维护，官方改用 `wx.getDeviceBenchmarkInfo()`
+ *   （额外返回 `modelLevel`：1 高档 / 2 中档 / 3 低档 / 0 未知）
  */
 export type ProcessingSampleRate = 16000 | 22050 | 44100;
 
-/** 最低基础库：`wx.createWebAudioContext` 起点（docs/02 §1.1 / §6）。 */
+/** 最低基础库：`wx.createWebAudioContext` 从 2.19.0 起提供。 */
 export const MIN_SDK_VERSION = '2.19.0';
 
 /**
- * 低端机判定阈值。官方只说明 benchmarkLevel 取值越高越好、移动端最高不超过 50，
- * 未给出档位映射，因此这里是经验阈值：⚠️ 待 M0 的 DB-12/DB-13 实测后校准。
+ * 低端机判定阈值。官方只说 benchmarkLevel 越高越好、移动端不超过 50，未给出档位映射，
+ * 因此这里是经验阈值，需按实机表现校准。
  */
 export const LOW_END_BENCHMARK_LEVEL = 10;
 

@@ -1,8 +1,7 @@
 /**
- * EDL 查询：时长推导与区间相交。纯函数。
+ * EDL 查询：时长推导、可听性判定与区间相交。纯函数。
  *
- * 字段语义的唯一权威处：docs/05 §2；渲染侧的求值流程见 docs/03 §5.3。
- * 约定：EDL 中的时间一律为**秒（float）**，帧换算只在显式处做（AGENTS §2.3）。
+ * 约定：EDL 中的时间一律为秒（float），帧换算只在显式处做。
  */
 import type { Asset, Clip, Edl, Id, Seconds, Track } from '../../../core/types';
 
@@ -23,7 +22,7 @@ export function clipSourceSpanSec(clip: Clip): Seconds {
   return Math.max(0, clip.sourceEnd - clip.sourceStart);
 }
 
-/** 片段在时间轴上的时长（秒）：`跨度 / speed`（docs/05 §2）。 */
+/** 片段在时间轴上的时长（秒）：`素材跨度 / speed`。 */
 export function clipDurationSec(clip: Clip): Seconds {
   const speed = clip.speed > 0 ? clip.speed : 1;
   return clipSourceSpanSec(clip) / speed;
@@ -52,7 +51,7 @@ export function edlDurationSec(edl: Edl): Seconds {
   return max;
 }
 
-/** 是否存在独奏轨道（solo 优先级见 docs/03 §5.3 第 2 步）。 */
+/** 是否存在独奏轨道（solo 优先于静音）。 */
 export function hasSolo(edl: Edl): boolean {
   return edl.tracks.some((track) => track.solo);
 }
@@ -91,7 +90,7 @@ export function clipAt(track: Track, timelineSec: Seconds): Clip | undefined {
 
 /**
  * 由时间轴位置求片段内的素材时间（秒）。
- * `loop` 片段按素材跨度取模（docs/03 §5.3 边界情况清单）。
+ * `loop` 片段按素材跨度取模。
  */
 export function sourceTimeAt(clip: Clip, timelineSec: Seconds): Seconds {
   const span = clipSourceSpanSec(clip);
@@ -109,7 +108,7 @@ export function countClips(edl: Edl): number {
   return total;
 }
 
-/** 被任何片段引用的素材 id 集合（用于清理未引用素材，docs/05 §5）。 */
+/** 被任何片段引用的素材 id 集合（用于清理未引用素材）。 */
 export function referencedAssetIds(edl: Edl): Set<Id> {
   const ids = new Set<Id>();
   for (const track of edl.tracks) {

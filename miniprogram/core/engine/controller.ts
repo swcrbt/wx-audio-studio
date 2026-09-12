@@ -1,11 +1,11 @@
 /**
  * 渲染控制器（主线程侧）：Worker 生命周期 + 素材读盘 + 结果写盘。
  *
- * 调度模型见 docs/03 §5.2；平台限制与依据见 docs/02 §1.5（`S9`/`S10`）：
- * - Worker 内无 `wx.*` → 素材必须由本控制器读出并传过去；
- * - **最多只能创建一个 Worker**，创建下一个前必须 `terminate()`；
- * - 官方建议重度计算开启 `useExperimentalWorker`（iOS 提速数倍），但可能被系统回收，
- *   需配合 `onProcessKilled` 处理。
+ * 平台限制（决定了这里的分工）：
+ * - Worker 内没有 `wx.*`：素材必须由本控制器读出后传过去；
+ * - 同时只能存在一个 Worker，创建下一个前必须 `terminate()`；
+ * - 重度计算建议开启 `useExperimentalWorker`（iOS 提速明显），但它可能被系统回收，
+ *   因此需处理 `onProcessKilled`。
  */
 import type { MainToWorkerMessage, RenderJob, WorkerToMainMessage } from './worker-protocol';
 import { FsError, describeFsError } from '../fs/errors';
@@ -85,7 +85,7 @@ export class RenderController {
       try {
         this.worker = wx.createWorker(RENDER_WORKER_PATH, { useExperimentalWorker: true });
       } catch (error) {
-        // Worker 创建失败：由上层决定是否降级到主线程分片渲染（docs/03 §9）
+        // Worker 创建失败：由上层决定是否降级到主线程分片渲染
         this.fail(
           new FsError({ code: 'ioError', message: '渲染线程创建失败，可重试或改用主线程渲染', action: 'retry' }),
         );

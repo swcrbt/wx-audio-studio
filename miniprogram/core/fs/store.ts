@@ -1,10 +1,8 @@
 /**
- * 工程索引 `index.json` 的读写与重建（结构与字段语义见 docs/05 §4.1）。
+ * 工程索引 `index.json` 的读写与重建。
  *
- * 设计要点：
- * - 列表页不读全部工程文件，只读这份轻量索引；
- * - 每次保存工程时同步更新（几 KB 的写盘成本可忽略）；
- * - 索引损坏 → 扫描 `projects/*.json` 重建（必须有降级路径）。
+ * 为什么需要它：列表页只读这一份轻量索引，避免为渲染列表解析全部工程文件。
+ * 索引在每次保存工程时同步更新；若缺失或损坏，扫描 `projects/*.json` 重建。
  */
 import type { Id, Project } from '../types';
 import { DATA_DIRS, paths } from './paths';
@@ -31,7 +29,7 @@ export interface StoreIndex {
     assetsBytes: number;
     peaksBytes: number;
     rendersBytes: number;
-    /** 是否已提示过容量告警（docs/05 §5）。 */
+    /** 是否已提示过容量告警。 */
     quotaWarned: boolean;
   };
 }
@@ -139,7 +137,7 @@ export async function readProjectFile(projectId: Id): Promise<unknown | null> {
   return readJson<unknown>(filePath);
 }
 
-/** 原子写工程 JSON（`docs/05 §7`）。 */
+/** 原子写工程 JSON（先写 `.tmp` 再 rename）。 */
 export async function writeProjectFile(project: Project): Promise<void> {
   await writeJsonAtomic(paths.project(project.id), project);
 }

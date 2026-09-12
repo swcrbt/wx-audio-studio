@@ -1,16 +1,16 @@
 /**
- * EDL 变更的**唯一入口**（AGENTS §1）。
+ * EDL 变更的唯一入口：所有修改 EDL 的代码都必须走这里。
  *
- * 设计约定：
+ * 约定：
  * 1. 全部为**纯函数**：接收 EDL 返回新的 EDL，绝不就地修改调用方的对象；
- * 2. 所有写入 `timelineStart` / 素材区间的路径都在这里做 **clamp + 帧对齐 + 排序**
- *    （docs/05 §9），避免 UI 层直接改 EDL 造成越界与重叠错误；
- * 3. 时间参数一律为秒；帧对齐用显式 `Math.round(t * sampleRate)`（AGENTS §2.3）。
+ * 2. 所有写入 `timelineStart` 与素材区间的路径都在这里做 **clamp + 帧对齐 + 排序**，
+ *    避免上层直接改 EDL 造成越界与重叠错误；
+ * 3. 时间参数一律为秒；帧对齐用显式 `Math.round(t * sampleRate)`。
  *
  * 不变量（由 `validate.ts` 复核）：
  * - `sourceStart < sourceEnd` 且落在素材时长内
  * - `timelineStart >= 0`、`speed > 0`
- * - 同一轨道的片段**允许重叠**（用于交叉淡化，docs/03 §5.3），但按 `timelineStart` 升序存放
+ * - 同一轨道的片段**允许重叠**（交叉淡化需要），但按 `timelineStart` 升序存放
  */
 import type {
   Asset,
@@ -24,13 +24,13 @@ import type {
 } from '../../../core/types';
 import { clipDurationSec, clipEndSec, isTrackAudible, trackById, trackDurationSec } from './query';
 
-/** 时间轴网格步长（吸附用，docs/01 ED-10：0.1s 网格）。 */
+/** 时间轴网格步长，吸附时使用。 */
 export const SNAP_GRID_SEC = 0.1;
 
-/** 区间类型来自 `core/types.ts`（唯一定义处），此处重新导出以便调用方就近引用。 */
+/** 区间类型来自 `core/types.ts`，此处重新导出以便调用方就近引用。 */
 export type { TimeRange };
 
-/** 把秒对齐到采样帧边界：`round(t × sampleRate) / sampleRate`（docs/05 §9）。 */
+/** 把秒对齐到采样帧边界：`round(t × sampleRate) / sampleRate`。 */
 export function frameAlignSec(sec: Seconds, sampleRate: number): Seconds {
   if (!Number.isFinite(sec) || !(sampleRate > 0)) return 0;
   return Math.round(sec * sampleRate) / sampleRate;
@@ -214,7 +214,7 @@ export function moveClip(edl: Edl, trackId: Id, clipId: Id, timelineStart: Secon
   return updateClip(edl, trackId, clipId, { timelineStart: aligned });
 }
 
-/** 吸附到网格与给定候选边界（docs/01 ED-10 / MX-9）。 */
+/** 吸附到网格与给定候选边界。 */
 export function snapSec(value: Seconds, candidates: readonly Seconds[], toleranceSec = 0.08): Seconds {
   let best = value;
   let bestDistance = toleranceSec;
@@ -231,7 +231,7 @@ export function snapSec(value: Seconds, candidates: readonly Seconds[], toleranc
 }
 
 /**
- * 在时间轴位置 `atSec` 处把片段切成两段（ED-7）。
+ * 在时间轴位置 `atSec` 处把片段切成两段。
  * 切点会被 clamp 到片段开区间内；无效切点返回原 EDL。
  *
  * @param newClipId 第二段的 id（由调用方生成，便于命令模式做逆操作）
@@ -309,12 +309,12 @@ function cutClipByRange(clip: Clip, range: TimeRange, idFactory: () => Id): Clip
 }
 
 export interface DeleteRangeOptions {
-  /** true = 波纹删除（后续片段前移，ED-6）；false = 静音（保留时间轴长度，ED-9）。 */
+  /** true = 波纹删除（后续片段前移）；false = 静音（保留时间轴长度）。 */
   ripple: boolean;
 }
 
 /**
- * 删除时间轴区间 `[startSec, endSec)`（ED-6 波纹删除 / ED-9 静音）。
+ * 删除时间轴区间 `[startSec, endSec)`：`ripple` 决定后续片段是否前移。
  *
  * @returns 新的 EDL；`ripple=false` 时后续片段位置不变（等于把该区间置为静音）
  */
@@ -348,7 +348,7 @@ export function deleteRange(
   return next;
 }
 
-/** 只保留时间轴区间 `[startSec, endSec)`（ED-5 裁剪到选区）。 */
+/** 只保留时间轴区间 `[startSec, endSec)`。 */
 export function trimToRange(edl: Edl, range: TimeRange, idFactory: () => Id): Edl {
   const from = frameAlignSec(Math.max(0, Math.min(range.startSec, range.endSec)), edl.sampleRate);
   const to = frameAlignSec(Math.max(range.startSec, range.endSec), edl.sampleRate);
@@ -386,13 +386,13 @@ export function trimToRange(edl: Edl, range: TimeRange, idFactory: () => Id): Ed
   return next;
 }
 
-/** 片段增益（FX-1）：-60 ～ +12 dB，超出被 clamp。 */
+/** 设置片段增益：-60 ～ +12 dB，超出被 clamp。 */
 export function setClipGainDb(edl: Edl, trackId: Id, clipId: Id, gainDb: number): Edl {
   const clamped = Number.isFinite(gainDb) ? Math.max(-60, Math.min(12, gainDb)) : 0;
   return updateClip(edl, trackId, clipId, { gainDb: clamped });
 }
 
-/** 片段淡入/淡出（ED-11）：`null` 表示取消。 */
+/** 设置片段淡入/淡出：`null` 表示取消。 */
 export function setClipFade(
   edl: Edl,
   trackId: Id,

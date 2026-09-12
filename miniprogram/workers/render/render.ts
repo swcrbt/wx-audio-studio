@@ -1,13 +1,13 @@
 /**
- * 分块渲染引擎（Worker 侧，纯计算）。调度模型见 docs/03 §5.2，EDL 求值见 §5.3。
+ * 分块渲染引擎（Worker 侧，纯计算）。
  *
- * 设计约束（AGENTS §1 / ADR-0001）：
- * - 本文件及其依赖的 `dsp/**`、`edl/**`、`codec/**` 物理位于 `workers/render/` 内，
- *   只依赖 TypedArray / Math，**不触碰任何平台 API**；
- * - 文件 I/O 由主线程负责：`planChunk()` 声明本块需要哪些素材帧区间，
- *   主线程读盘后通过 `assets` 参数注入，再调用 `renderChunk()`。
+ * 约束：
+ * - 本文件与其依赖的 `dsp/**`、`edl/**`、`codec/**` 都在 `workers/render/` 内，
+ *   只允许依赖 TypedArray 与 Math，不得触碰平台 API；
+ * - 文件 I/O 由主线程负责：`planChunk()` 声明本块需要的素材帧区间，主线程读盘后
+ *   通过 `assets` 参数注入，再调用 `renderChunk()`。
  *
- * 效果链顺序遵循 docs/03 §6.6 的固定管线：
+ * 效果链顺序固定为：
  * 片段增益/淡化 → 片段效果（EQ → 门 → 压缩）→ 轨道增益/声像 → 轨道效果
  * （EQ → 压缩 → 混响/回声）→ 总线（EQ → 限制器）→ 编码。
  */
@@ -297,7 +297,7 @@ function readBands(value: unknown): number[] | null {
   return value.map((v) => (typeof v === 'number' && Number.isFinite(v) ? v : 0));
 }
 
-/** 等功率声像：`gL = cos((pan+1)·π/4)`、`gR = sin((pan+1)·π/4)`（docs/03 §6.1）。 */
+/** 等功率声像：`gL = cos((pan+1)·π/4)`、`gR = sin((pan+1)·π/4)`。 */
 export function panGains(pan: number): { left: number; right: number } {
   const clamped = Math.max(-1, Math.min(1, Number.isFinite(pan) ? pan : 0));
   const angle = ((clamped + 1) * Math.PI) / 4;
@@ -378,7 +378,7 @@ export function renderChunk(
     }
   }
 
-  // 总线：限制器（docs/03 §6.6 —— 限制器必须挂在总线）
+  // 总线：限制器（限制器必须挂在总线上，不能只给单轨加）
   let limited = false;
   if (state.job.limiter !== false) {
     for (let channel = 0; channel < state.channels; channel++) {

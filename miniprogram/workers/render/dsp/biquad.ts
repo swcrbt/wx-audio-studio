@@ -1,11 +1,11 @@
 /**
  * Biquad 滤波器（Direct Form I），系数采用 RBJ Audio EQ Cookbook 公式。
  *
- * 参考：Robert Bristow-Johnson, *Audio EQ Cookbook*（业界标准公式集，
- * 见 https://www.w3.org/TR/audio-eq-cookbook/ 。docs/03 §6.2 引用的即为此文）。
+ * 公式来源：Robert Bristow-Johnson, *Audio EQ Cookbook*
+ * （https://www.w3.org/TR/audio-eq-cookbook/）。
  *
  * 纯函数 + 显式状态：同一段音频可以分块调用并把返回的 `BiquadState` 传给下一次，
- * 结果与一次调用完全一致（渲染分块依赖这一点）。
+ * 结果与一次调用完全一致。
  */
 import { linearToDb } from './gain';
 
@@ -187,7 +187,7 @@ export function biquadInPlace(
 }
 
 /**
- * 10 段图形 EQ 的中心频率（Hz），见 docs/03 §6.2 与 docs/01 FX-3。
+ * 10 段图形 EQ 的中心频率（Hz）。
  * Q 取 1.4（段间近似互补覆盖）。
  */
 export const EQ10_BANDS_HZ = [

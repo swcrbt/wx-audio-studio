@@ -1,7 +1,7 @@
 /**
- * 总线限制器：前瞻 + 平滑增益 + 硬限幅（docs/03 §6.3）。
+ * 总线限制器：前瞻 + 平滑增益 + 硬限幅。
  *
- * 算法（离线渲染专用，允许"看到未来"）：
+ * 这是离线渲染专用算法（允许“看到未来”）：
  * 1. 对每个采样求其**前瞻窗口内**的最大绝对值 `windowPeak[i]`（O(n) 滑动窗口最大值）；
  * 2. 目标增益 `gainTarget[i] = min(1, ceiling / windowPeak[i])`；
  * 3. 增益包络：下降（attack）立即、上升（release）指数恢复；
@@ -14,9 +14,9 @@ import { dbToLinear } from './gain';
 
 export interface LimiterOptions {
   sampleRate: number;
-  /** 限幅上限，默认 -0.3dBFS（docs/03 §2：为 16bit 编码留余量）。 */
+  /** 限幅上限，默认 -0.3dBFS：为转 16bit 留编码余量，避免削波。 */
   ceilingDb?: number;
-  /** 前瞻时间，默认 10ms（docs/03 §6.3）。 */
+  /** 前瞻时间，默认 10ms。 */
   lookaheadMs?: number;
   /** 恢复时间，默认 80ms。 */
   releaseMs?: number;

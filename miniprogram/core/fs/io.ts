@@ -1,11 +1,8 @@
 /**
- * 文件系统通用操作封装（平台适配层）。所有路径都应由 `fs/paths.ts` 提供（AGENTS §1）。
+ * 文件系统通用操作封装（平台适配层）。所有路径都必须由 `fs/paths.ts` 构造。
  *
- * 依赖的官方能力（docs/02 §1.4，来源 `S8`）：
- * - `mkdir({ dirPath, recursive })`、`readdir`、`access`、`unlink`、`stat`
- * - `readFile({ filePath, encoding: 'utf8' })`
- * - `rename({ oldPath, newPath })`：官方确认支持本地路径且可移动文件 →
- *   原子保存（写 `.tmp` → rename）可用（docs/05 §7）
+ * `rename` 官方支持本地路径且可移动文件，因此 `writeJsonAtomic` 用
+ * “先写 `.tmp` 再 rename”实现原子保存。
  */
 import { FsError, describeFsError } from './errors';
 

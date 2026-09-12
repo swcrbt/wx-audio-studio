@@ -1,11 +1,9 @@
 /**
  * Worker 入口：消息分发与分块渲染调度（只放协议与调度，不放算法）。
  *
- * 平台限制（docs/02 §1.5 / S9）：
- * - **Worker 内不支持 `wx` 系列的 API** → 素材数据必须由主线程读盘后传进来；
- * - Worker 内代码只能引用本目录内的文件 → 纯计算代码全部位于 `workers/render/`（ADR-0001）。
- *
- * 消息与任务类型定义见 `core/engine/worker-protocol.ts`（唯一权威处，此处只 `import type`）。
+ * 两条平台限制决定了这个入口的形状：
+ * - Worker 内没有 `wx` 系列 API，素材只能由主线程读盘后传进来；
+ * - Worker 内只能引用本目录下的文件，所以纯计算代码全部放在 `workers/render/`。
  */
 import type {
   MainToWorkerMessage,

@@ -1,6 +1,6 @@
 /**
- * 分析与工具函数（docs/03 §6.5）：峰值、RMS、静音检测、峰值归一化、体积预估。
- * 全部为纯函数；就地修改的函数名带 `InPlace`（AGENTS §2.4）。
+ * 分析与工具函数：峰值、RMS、静音检测、峰值归一化、体积预估。
+ * 全部为纯函数；就地修改的函数名带 `InPlace`。
  */
 import type { TimeRange } from '../../../core/types';
 import { dbToLinear, linearToDb } from './gain';
@@ -42,7 +42,7 @@ export interface SilenceOptions {
   sampleRate: number;
   /** 低于该阈值视为静音，默认 -45dBFS。 */
   thresholdDb?: number;
-  /** 最短静音时长，默认 300ms（docs/01 ED-13 的默认体感值）。 */
+  /** 最短静音时长，默认 300ms（口播场景的常用值）。 */
   minSilenceMs?: number;
   /** 两端各保留的余量，避免切掉字头，默认 60ms。 */
   padMs?: number;
@@ -56,7 +56,7 @@ const DEFAULT_PAD_MS = 60;
 const DEFAULT_WINDOW_MS = 20;
 
 /**
- * 检测静音区间（ED-13 自动去停顿）。
+ * 检测静音区间（自动去停顿）。
  *
  * 实现：按 `windowMs` 分窗求 RMS，低于阈值记为静音窗，合并相邻静音窗；
  * 只保留长度 ≥ `minSilenceMs` 的段，并按 `padMs` 向两侧收缩（保留呼吸声余量）。
@@ -128,7 +128,7 @@ export interface NormalizeResult {
 }
 
 /**
- * 峰值归一化（FX-2）：把峰值拉到 `targetDb`（默认 -1dBFS）。**in-place**。
+ * 峰值归一化：把峰值拉到 `targetDb`（默认 -1dBFS）。**in-place**。
  *
  * 只做衰减或提升的**统一缩放**，因此不会改变动态；全零输入不做任何处理。
  */
@@ -147,8 +147,8 @@ export function normalizePeakInPlace(buf: Float32Array, targetDb = -1): Normaliz
 }
 
 /**
- * 预估 WAV 文件体积（含 44 字节头），与 docs/03 §2 的中间格式一致。
- * 用于导出前的 100MB 上限拦截（docs/03 §9）。
+ * 预估 WAV 文件体积（含 44 字节标准头）。
+ * 用于导出前拦截超过平台 100MB 单文件上限的情况。
  */
 export function estimateWavFileSize(
   seconds: number,

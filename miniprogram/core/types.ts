@@ -1,13 +1,12 @@
 /**
- * 全部数据模型类型。字段语义的唯一权威处：docs/05 §2（本文件是它的代码落地）。
+ * 全部数据模型类型。
  *
- * ⚠️ 本文件**只允许类型声明**，不得出现运行时代码：Worker 侧以 `import type`
- * 引用它（编译后消除，不产生跨目录 require，见 ADR-0001）。
+ * ⚠️ 本文件只允许类型声明，不得出现运行时代码：Worker 侧以 `import type` 引用它，
+ * 编译后类型被消除，因此不会在 Worker 内产生跨目录 require。
  */
 
 export type Id = string;
-/** 时间一律用秒（float）；采样帧只出现在 DSP 与渲染内部（AGENTS §2.3）。 */
-/** 时间量一律用秒（float）；采样帧只出现在 DSP 与渲染内部（AGENTS §2.3）。 */
+/** 时间量一律用秒（float）；采样帧只出现在 DSP 与渲染内部。 */
 export type Seconds = number;
 
 /** 时间轴区间（秒），闭开区间 `[startSec, endSec)`。 */

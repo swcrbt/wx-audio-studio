@@ -1,7 +1,7 @@
 /**
- * 增益换算与逐采样增益。纯函数（AGENTS §3.1）。
+ * 增益换算与逐采样增益。纯函数。
  *
- * 单位约定（AGENTS §2.3）：dB 与线性增益**永不混用**，函数名与参数名必须表明单位。
+ * 单位约定：dB 与线性增益绝不混用，函数名与参数名必须表明单位（如 `gainDb` / `gainLinear`）。
  */
 
 /**
@@ -30,7 +30,7 @@ const MIN_GAIN_DB = -60;
 const MAX_GAIN_DB = 12;
 
 /**
- * 把增益限制到 UI 允许范围（-60dB ～ +12dB，见 docs/05 §2 `Track.gainDb`）。
+ * 把增益限制到 UI 允许范围（-60dB ～ +12dB）。
  * 非有限值按 0dB 处理。
  */
 export function clampGainDb(gainDb: number): number {
@@ -41,8 +41,8 @@ export function clampGainDb(gainDb: number): number {
 /**
  * 就地把缓冲乘以线性增益。**in-place**（AGENTS §2.4：就地修改必须在函数名标明）。
  *
- * 乘积超出 [-1, 1] 时**不在此处钳制** —— 中间动态留给总线限制器处理（docs/03 §6.6 管线），
- * 提前削波会破坏后续动态处理。
+ * 乘积超出 [-1, 1] 时**不在此处钳制**：中间动态留给总线限制器处理，
+ * 提前削波会破坏后续处理。
  */
 export function applyGainInPlace(buf: Float32Array, gainLinear: number): void {
   if (gainLinear === 1) return;

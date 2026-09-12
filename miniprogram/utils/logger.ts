@@ -1,6 +1,6 @@
 /**
- * 统一日志出口（AGENTS §6）：禁止裸 `console.log` 入库；日志不得包含音频内容、
- * 完整文件路径或任何可识别信息。
+ * 统一日志出口：禁止裸 `console.log` 入库；日志不得包含音频内容、完整文件路径
+ * 或任何可识别信息。
  */
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 

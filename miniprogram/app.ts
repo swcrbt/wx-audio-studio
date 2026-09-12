@@ -1,6 +1,5 @@
 /**
- * 小程序入口。属平台适配层（AGENTS §1）：只做启动期能力探测与全局单例装配，
- * 不放音频算法。
+ * 小程序入口：只做启动期能力探测与全局单例装配，不放音频算法。
  */
 import { applyBenchmarkInfo, detectCaps, fetchBenchmarkInfo, type Caps } from './core/caps';
 import { logger } from './utils/logger';

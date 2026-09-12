@@ -1,6 +1,6 @@
 # 03 · 音频引擎架构与 DSP 算法
 
-> 状态：**实现中** ｜ 最后更新：2026-09-12 ｜ 关联代码：`miniprogram/workers/render/codec/wav.ts`、`workers/render/dsp/{gain,fade}.ts`、`workers/render/peaks/*.ts`（其余待实现）
+> 状态：**实现中** ｜ 最后更新：2026-09-12 ｜ 关联代码：`miniprogram/workers/render/{codec,dsp,edl,peaks}/**`、`workers/render/render.ts`、`workers/render/index.ts`、`core/engine/controller.ts`
 >
 > **本文负责**：中间格式、导入与录音管线、峰值结构、分块渲染调度、DSP 算法与参数、播放与试听策略、模块接口、错误降级。
 > **本文不负责**：平台能力与限制（版本、格式支持、内存上限） → [02](./02-platform-capability.md)；EDL 字段与存储布局 → [05](./05-data-model.md)；性能验收指标 → [06](./06-engineering-roadmap.md)；交互与视觉 → [04](./04-ui-ux.md)。

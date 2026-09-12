@@ -1,6 +1,6 @@
 /**
- * 所有文件路径的唯一构造入口（AGENTS §1：禁止在其他地方硬编码 `USER_DATA_PATH`
- * 或任何文件路径字符串）。目录布局与命名规则见 docs/05 §4。
+ * 所有文件路径的唯一构造入口：其他模块不得自行拼接 `USER_DATA_PATH` 或路径字符串，
+ * 否则目录迁移与清理策略会失控。
  */
 export const DATA_DIRS = {
   assets: 'assets',
@@ -45,7 +45,7 @@ export const paths = {
     return `${userDataPath()}/${DATA_DIRS.projects}/${projectId}.json`;
   },
 
-  /** 原子保存的临时文件（写成功后用 rename 覆盖正式文件，docs/05 §7）。 */
+  /** 原子保存的临时文件：写成功后用 rename 覆盖正式文件。 */
   projectTmp(projectId: string): string {
     return `${paths.project(projectId)}.tmp`;
   },
@@ -75,8 +75,7 @@ export const paths = {
 };
 
 /**
- * 生成 `{timestamp}-{6位 base36 随机}` 形式的 id（docs/05 §4.2）。
- * 随机后缀用于避免同毫秒创建冲突。
+ * 生成 `{timestamp}-{6位 base36 随机}` 形式的 id：随机后缀用于避免同毫秒创建冲突。
  */
 export function createId(now: number = Date.now()): string {
   const rand = Math.floor(Math.random() * 36 ** 6)

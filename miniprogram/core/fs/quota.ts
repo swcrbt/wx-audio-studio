@@ -1,22 +1,22 @@
 /**
- * 容量统计与清理（策略见 docs/05 §5）。
+ * 容量统计与清理。
  *
- * 官方的硬约束（来源见 docs/02 §1.4 的 `S7`）：**本地用户文件 + 本地缓存文件合计上限 200MB**。
- * 阈值以"占用百分比"驱动，不假设具体可用字节数（⚠️ 实际阈值待 DB-14 真机确认）。
+ * 平台硬约束：本地用户文件与本地缓存文件**合计上限 200MB**。
+ * 因此阈值都以“占配额百分比”表达，不假设具体可用字节数。
  */
 import type { Edl } from '../types';
 import { DATA_DIRS, paths } from './paths';
 import { exists, fileSize, listFiles, removeFile } from './io';
 import { logger } from '../../utils/logger';
 
-/** 官方配额（docs/05 §5：本表所有百分比均以此为分母）。 */
+/** 官方配额：所有百分比阈值均以此为分母。 */
 export const STORAGE_QUOTA_BYTES = 200 * 1024 * 1024;
 
-/** 容量警戒线（docs/05 §5：> 80% 首页提示，> 95% 导出前强制提示）。 */
+/** 容量警戒线：超过时在首页提示，超过上限时要导出前强制提示。 */
 export const QUOTA_WARN_RATIO = 0.8;
 export const QUOTA_CRITICAL_RATIO = 0.95;
 
-/** 预览缓存保留数量上限（docs/05 §5 清理策略）。 */
+/** 预览缓存保留数量上限。 */
 export const MAX_PREVIEW_FILES = 3;
 
 export type QuotaLevel = 'ok' | 'warn' | 'critical';
@@ -76,7 +76,7 @@ export async function computeStorageUsage(): Promise<StorageUsage> {
   };
 }
 
-/** 启动时清空 `tmp/`（docs/05 §5 清理策略①）。 */
+/** 启动时清空 `tmp/`（未完成的中间产物一律丢弃）。 */
 export async function clearTmpDir(): Promise<number> {
   const dir = `${paths.root()}/${DATA_DIRS.tmp}`;
   const files = await listFiles(dir);
@@ -114,7 +114,7 @@ function lastModifiedAt(filePath: string): Promise<number> {
 
 /**
  * 清理旧预览文件：`renders/preview-*.wav` 只保留最新的 `MAX_PREVIEW_FILES` 个。
- * **用户成品 `out-*.wav` 永不自动删除**（docs/05 §5 保护策略）。
+ * **用户成品 `out-*.wav` 永不自动删除**。
  */
 export async function cleanStalePreviews(maxFiles = MAX_PREVIEW_FILES): Promise<number> {
   const dir = `${paths.root()}/${DATA_DIRS.renders}`;
@@ -140,7 +140,7 @@ export async function cleanStalePreviews(maxFiles = MAX_PREVIEW_FILES): Promise<
 }
 
 /**
- * 找出未被任何片段引用的素材文件（相对路径形式，docs/05 §5 清理策略③）。
+ * 找出未被任何片段引用的素材文件（相对路径形式）。
  * 只返回确实存在的文件对应的素材 id。
  */
 export async function findUnreferencedAssets(
@@ -155,7 +155,7 @@ export async function findUnreferencedAssets(
   return out;
 }
 
-/** 导入前的体积/时长预估（docs/02 §3 的内存与配额约束）。 */
+/** 导入前的体积与时长预估。 */
 export function estimateAssetBytes(seconds: number, sampleRate: number, channels: number): number {
   return Math.max(0, Math.round(seconds * sampleRate)) * channels * 2 + 44;
 }

@@ -1,15 +1,12 @@
 /**
- * WAV 文件分块读写（平台适配层，允许 `wx.*`；AGENTS §1）。
+ * WAV 文件分块读写（平台适配层）。
  *
- * 依赖的官方能力与限制（依据 docs/02 §1.4，来源编号 `S8` 见 §1.7）：
- * - `FileSystemManager.open()` → `fd`；
- * - `FileSystemManager.read({ fd, arrayBuffer, offset, length, position })`：**基础库 2.16.1+**，
- *   `position` 为正整数时文件指针不变 → 可随机访问（分块渲染的基石）；
- * - `FileSystemManager.write({ fd, data, position })`；
- * - 单文件上限 **100MB**（错误码 `1300202`）。
+ * 用到的平台能力：`FileSystemManager.open/read/write/close`。其中 `FileSystemManager.read`
+ * 的 `position` 为正整数时文件指针保持不变（基础库 2.16.1+），因此能随机访问任意帧区间；
+ * 单文件写入上限 100MB，超限时平台返回错误码 `1300202`。
  *
- * 头部解析与回填复用 `workers/render/codec/wav.ts`（主线程反向依赖 Worker 目录是被允许的，
- * 见 ADR-0001）。
+ * 头部解析与回填复用 `workers/render/codec/wav.ts`：主线程反向引用 Worker 目录是允许的
+ * （目录限制只作用于 Worker 内部）。
  */
 import {
   WAV_HEADER_BYTES,
@@ -181,7 +178,7 @@ export interface WavWriter {
   write(pcm: Int16Array): Promise<void>;
   /** 回填 `RIFF.chunkSize` 与 `data.dataSize` 并关闭文件。 */
   finalize(): Promise<void>;
-  /** 中止写盘：关闭并删除半成品（docs/03 §9：渲染失败不留残file）。 */
+  /** 中止写盘：关闭并删除半成品，避免留下残缺文件。 */
   abort(): Promise<void>;
   /** 已写入的 data 区字节数。 */
   readonly dataBytes: number;
@@ -189,7 +186,7 @@ export interface WavWriter {
 
 /**
  * 打开一个流式 WAV 写入器：先写占位头，数据边算边写，结束时回填长度。
- * 这是录音与分块渲染共用的落盘路径（docs/03 §2 / §3）。
+ * 录音与分块渲染共用这条落盘路径。
  */
 export async function openWavWriter(filePath: string, spec: WavWriterSpec): Promise<WavWriter> {
   await unlinkQuiet(filePath); // 新文件：避免 'w+' 之外的残留内容

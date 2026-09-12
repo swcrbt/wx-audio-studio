@@ -1,13 +1,12 @@
 /**
  * EDL 加载校验、自动修复与 schema 迁移。纯函数。
  *
- * 规则来源：docs/05 §8（版本迁移）与 §9（一致性要点）。原则：
- * - 校验失败**不抛错**：尽量修复并记录 `issue`，把选择权交回 UI；
+ * 原则：
+ * - 校验失败不抛错：尽量修复并记录 `issue`，把选择权交回 UI；
  * - 读取时忽略未知字段（向前兼容），不因新版本写过的工程直接崩溃；
- * - schema 版本高于当前时不猜测，返回 `null` 让上层提示"工程版本过新"。
+ * - schema 版本高于当前时不猜测，返回 `null` 让上层提示“工程版本过新”。
  *
- * 本文件承载 `CURRENT_SCHEMA_VERSION` 与迁移函数：它属于 EDL 逻辑，
- * 需要被主线程与 Worker 两侧共用（放这里可避免跨目录 require，见 ADR-0001）。
+ * 迁移函数需要被主线程与 Worker 两侧共用，因此放在本目录内（Worker 只能引用本目录下的文件）。
  */
 import type {
   Asset,
@@ -21,7 +20,7 @@ import type {
   Track,
 } from '../../../core/types';
 
-/** 当前工程结构版本（docs/05 §8）。结构变更时必须 +1 并补迁移函数与单测。 */
+/** 当前工程结构版本；结构变更时必须 +1 并补迁移函数与单测。 */
 export const CURRENT_SCHEMA_VERSION = 1;
 
 const VALID_SAMPLE_RATES = [16000, 22050, 44100] as const;

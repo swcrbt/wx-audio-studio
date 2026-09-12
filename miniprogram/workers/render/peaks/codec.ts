@@ -1,5 +1,5 @@
 /**
- * 峰值金字塔的二进制序列化（格式见 docs/03 §4.1）。
+ * 峰值金字塔的二进制序列化。
  *
  * 布局（全部小端）：
  * ```
@@ -14,7 +14,7 @@
  * ```
  *
  * 只存每级桶数与 `baseBucket`：`bucketSize` 由 `baseBucket << level` 推出，
- * 避免同一信息存两份（AGENTS §0.7）。
+ * 避免同一信息存两份。
  */
 import type { PeaksLevel } from './build';
 

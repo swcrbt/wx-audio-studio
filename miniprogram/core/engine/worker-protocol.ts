@@ -1,11 +1,10 @@
 /**
- * 跨线程消息与渲染任务的**唯一定义处**（AGENTS §1）。
+ * 跨线程消息与渲染任务的唯一定义处。
  *
- * ⚠️ Worker 侧只能以 `import type` 引用本文件：类型在编译后被消除，不会产生
- * 跨目录 `require`（官方限制：Worker 只能引用 Worker 目录内文件，见 docs/02 §1.5
- * 与 ADR-0001）。
+ * ⚠️ Worker 侧只能以 `import type` 引用本文件：类型编译后被消除，不会产生跨目录
+ * require（Worker 内只能 require 本目录下的文件）。
  *
- * 调度模型与字段语义见 docs/03 §5.2。传输约定：
+ * 传输约定：
  * - 素材请求/回传都用**帧号**（不是字节偏移）：主线程知道素材声道数，由它换算字节；
  * - `pcmBuffer` 是 Int16 交错 PCM 的 `ArrayBuffer`（`postMessage` 为复制语义）。
  */

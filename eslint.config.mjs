@@ -2,11 +2,10 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
 /**
- * 分层规则的可执行部分（规则的唯一权威处是 AGENTS.md §1）：
- * 1. 纯逻辑层 miniprogram/workers/render/** 禁止依赖 wx.*；
- * 2. 同一层内禁止 require/import 该目录之外的路径（官方限制：Worker 内只能
- *    引用 Worker 目录内的文件，见 docs/02 §1.5 与 ADR-0001）；
- * 3. 类型导入（import type）允许，因为它编译后被消除。
+ * 分层规则的可执行部分：
+ * 1. 纯逻辑层 miniprogram/workers/render/** 禁止运行时依赖 wx.* 或 core/；
+ * 2. 该目录内禁止 import/require 目录之外的路径（Worker 内只能引用本目录下的文件）；
+ * 3. `import type` 允许：类型导入编译后被消除，不产生运行时 require。
  */
 export default tseslint.config(
   { ignores: ['node_modules/**', 'coverage/**', 'miniprogram/miniprogram_npm/**'] },
@@ -25,20 +24,20 @@ export default tseslint.config(
               // 而 `import type` 编译后被消除，不会在 Worker 里产生运行时 require（ADR-0001）
               allowTypeImports: true,
               message:
-                '纯逻辑层禁止运行时依赖 wx.* 或 core/（类型可用 import type，见 AGENTS §1 与 ADR-0001）',
+                '纯逻辑层禁止运行时依赖 wx.* 或 core/（类型可用 import type）',
             },
             {
               group: ['../../**'],
               allowTypeImports: true,
               message:
-                'Worker 只能引用 workers/render/ 目录内的文件，禁止越出该目录（见 docs/02 §1.5 与 ADR-0001）',
+                'Worker 只能引用 workers/render/ 目录内的文件，禁止越出该目录',
             },
           ],
         },
       ],
       'no-restricted-globals': [
         'error',
-        { name: 'wx', message: '纯逻辑层禁止访问 wx.*（见 AGENTS §1）' },
+        { name: 'wx', message: '纯逻辑层禁止访问 wx.*' },
       ],
     },
   },

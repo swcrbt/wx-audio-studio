@@ -1,12 +1,11 @@
 /**
  * WAV（RIFF/WAVE，16-bit PCM，little-endian）头读写与样本格式转换。纯函数、无平台依赖。
  *
- * 规范见 docs/03 §2：所有素材统一为「WAV / PCM / 16-bit / 小端 / 无附加 chunk」，
- * 标准头 44 字节（`RIFF` + `fmt ` + `data`）。
+ * 本项目统一使用：44 字节标准头（`RIFF` + `fmt ` + `data`）、线性 PCM、无附加 chunk；
+ * 解析函数额外兼容带附加块的第三方 WAV。
  *
- * 注：本文件所有 TypedArray 读取都写 `?? 0` —— 工程开启了
- * `noUncheckedIndexedAccess`（AGENTS §2.1），索引访问类型为 `number | undefined`；
- * 对音频缓冲而言"越界读按 0 处理"是安全语义。
+ * 注：本文件所有 TypedArray 读取都写 `?? 0` —— 工程开启了 `noUncheckedIndexedAccess`，
+ * 索引访问的类型是 `number | undefined`；对音频缓冲而言“越界读按 0 处理”是安全语义。
  */
 
 /** 标准 44 字节头长度。 */
