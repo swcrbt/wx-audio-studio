@@ -14,7 +14,7 @@ const INT16_SCALE = 1 / 32768;
  * `samplesPerPixel < 基础桶` 时用 level 0（放大很深，交给前端逐点绘制），
  * 否则取 `floor(log2(samplesPerPixel / baseBucket))` 并 clamp 到最大级。
  */
-export function pickLevelIndex(levels: PeaksLevel[], samplesPerPixel: number): number {
+export function pickLevelIndex(levels: readonly PeaksLevel[], samplesPerPixel: number): number {
   const base = levels[0];
   if (!base) return -1;
   if (!(samplesPerPixel > base.bucketSize)) return 0;
@@ -35,7 +35,7 @@ export function pickLevelIndex(levels: PeaksLevel[], samplesPerPixel: number): n
  * 的相关位置置 0，不抛错；超出素材范围的采样按"无数据"处理（该像素输出 0）。
  */
 export function samplePeaks(
-  levels: PeaksLevel[],
+  levels: readonly PeaksLevel[],
   fromSample: number,
   toSample: number,
   px: number,

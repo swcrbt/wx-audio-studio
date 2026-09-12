@@ -1,6 +1,6 @@
 # 04 · 界面与交互设计
 
-> 状态：**已定稿** ｜ 最后更新：2026-09-12 ｜ 关联代码：未实现（设计阶段，规划于 `miniprogram/pages/`、`components/`）
+> 状态：**实现中** ｜ 最后更新：2026-09-12 ｜ 关联代码：`miniprogram/pages/{index,editor}/`、`components/{waveform-canvas,timeline-ruler,empty-state}/`、`core/view/viewport.ts`
 >
 > **本文负责**：信息架构、页面流程、布局与线框、波形画布规格、手势映射、交互状态机、组件契约、视觉与反馈规范、空态/错误态。
 > **本文不负责**：功能优先级与 MVP 边界 → [01](./01-product-spec.md)；渲染、播放、录音等技术细节 → [03](./03-audio-engine.md)；数据字段 → [05](./05-data-model.md)；平台限制 → [02](./02-platform-capability.md)。
@@ -33,6 +33,8 @@
 ```
 
 ## 3. 编辑器页面（核心）
+
+> **M1 实现范围（单素材切割视图）**：波形显示**焦点素材**（工程第一条轨道第一个片段引用的素材）的峰值，横轴为素材时间。单片段工程的素材时间与工程时间轴一致，因此选区与播放头可直接用于 `edl/ops` 的时间轴操作；多片段拼接与跨轨拖动在混音页完成（§2 的页面流程即如此设计）。波形数据直接以引用传入画布组件，不经 `setData`。
 
 ### 3.1 布局线框
 
@@ -263,6 +265,8 @@
 | `ClipBlock` | 片段块（缩略波形、把手、淡入淡出标记） | `clip`、`pxPerSecond`、`bind:clipAction` |
 | `ProgressTask` | 长任务进度条（导入/渲染/导出） | `stage`、`ratio`、`etaSec`、`bind:cancel` |
 | `EmptyState` | 空态插画 + 文案 + 按钮 | `type`、`title`、`desc`、`actions` |
+
+> **M1 落地状态**：`WaveformCanvas`（Canvas 2D + 手势 + 离屏位图复用）、`TimelineRuler`（刻度由页面算好后传入）、`EmptyState` 已实现；其余组件随对应页面落地。
 
 ## 8. 待确认的交互问题
 

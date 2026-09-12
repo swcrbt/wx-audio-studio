@@ -1,3 +1,11 @@
 {
-  "navigationBarTitleText": "editor"
+  "navigationBarTitleText": "编辑",
+  "navigationBarBackgroundColor": "#12151A",
+  "navigationBarTextStyle": "white",
+  "backgroundColor": "#12151A",
+  "disableScroll": true,
+  "usingComponents": {
+    "waveform-canvas": "../../components/waveform-canvas/index",
+    "timeline-ruler": "../../components/timeline-ruler/index"
+  }
 }

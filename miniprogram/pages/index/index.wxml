@@ -1,1 +1,54 @@
-<view class="page"></view>
+<view class="page">
+  <!-- 顶部：新建 + 存储占用 -->
+  <view class="header">
+    <view class="primary-btn" bindtap="handleCreate">新建工程</view>
+    <view class="header-actions">
+      <view class="ghost-btn" bindtap="handleGoRecord">录音</view>
+      <view class="ghost-btn" bindtap="handleImportFile">导入文件</view>
+    </view>
+  </view>
+
+  <view class="usage usage-{{usageLevel}}">
+    <text>存储占用 {{usageText}}（上限 200MB）</text>
+    <view class="usage-clean" bindtap="handleCleanup">清理</view>
+  </view>
+
+  <view
+    wx:if="{{resumeProject}}"
+    class="resume"
+    bindtap="handleOpenResume"
+  >继续编辑：{{resumeProject.name}}</view>
+
+  <!-- 导入进度（长任务不用全屏遮罩） -->
+  <view wx:if="{{importing}}" class="import-bar">
+    <text>{{importing.stage}} {{importing.percent}}%</text>
+    <text class="import-name">{{importing.name}}</text>
+  </view>
+
+  <!-- 列表 -->
+  <view wx:if="{{projects.length > 0}}" class="list">
+    <view
+      wx:for="{{projects}}"
+      wx:key="id"
+      class="card"
+      data-id="{{item.id}}"
+      bindtap="handleOpen"
+      bindlongpress="handleCardMenu"
+    >
+      <view class="card-main">
+        <text class="card-name">{{item.name}}</text>
+        <text class="card-meta">{{item.durationLabel}} · {{item.updatedLabel}} · {{item.sizeLabel}}</text>
+      </view>
+      <view class="card-more" catchtap="handleCardMenu" data-id="{{item.id}}">⋯</view>
+    </view>
+  </view>
+
+  <empty-state
+    wx:else
+    type="projects"
+    title="还没有作品，先录一段试试"
+    desc="录一段，或导入微信里的音频文件"
+    actions="{{emptyActions}}"
+    bind:action="handleEmptyAction"
+  />
+</view>

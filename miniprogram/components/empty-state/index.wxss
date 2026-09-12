@@ -1,0 +1,66 @@
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 120rpx 48rpx 80rpx;
+}
+
+/* 插画位：用等宽竖条示意波形，M1 不引入图片资源（主包体积红线） */
+.empty-art {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  height: 120rpx;
+  margin-bottom: 40rpx;
+}
+
+.bar {
+  width: 16rpx;
+  border-radius: 8rpx;
+  background-color: #c9d2e3;
+}
+
+.bar-1 { height: 40rpx; }
+.bar-2 { height: 88rpx; }
+.bar-3 { height: 120rpx; }
+.bar-4 { height: 64rpx; }
+.bar-5 { height: 32rpx; }
+
+.empty-art-record .bar { background-color: #ffd6cf; }
+.empty-art-export .bar { background-color: #d6f0e2; }
+
+.empty-title {
+  font-size: 30rpx;
+  color: #1a1f2b;
+  font-weight: 600;
+  text-align: center;
+}
+
+.empty-desc {
+  margin-top: 16rpx;
+  font-size: 26rpx;
+  color: #8b93a3;
+  text-align: center;
+  line-height: 38rpx;
+}
+
+.empty-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 48rpx;
+}
+
+.empty-btn {
+  padding: 0 48rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  border-radius: 24rpx;
+  background-color: #ffffff;
+  color: #2b3140;
+  font-size: 28rpx;
+}
+
+.empty-btn-primary {
+  background-color: #4c8dff;
+  color: #ffffff;
+}

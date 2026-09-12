@@ -45,7 +45,8 @@ wx-audio-studio/
 │   │   ├── types.ts                  全部数据模型类型（仅类型声明）
 │   │   ├── engine/                   controller.ts（调度与 I/O）· worker-protocol.ts（消息唯一定义处）
 │   │   ├── history/                  命令模式撤销栈
-│   │   ├── store/                    工程状态（EDL + 撤销栈 + 自动保存）
+│   │   ├── store/                    工程状态（EDL + 撤销栈 + 自动保存）· 打开/新建/导入工程
+│   │   ├── view/                     viewport.ts（时间轴视口与手势几何，纯计算）
 │   │   ├── audio/                    import.ts（导入管线）· record.ts（录音管线）
 │   │   ├── fs/                       paths · io · errors · wav-file · store · quota
 │   │   ├── player/                   transport · clip-preview · preview-cache
@@ -73,6 +74,7 @@ wx-audio-studio/
 | `workers/render/dsp/` `workers/render/codec/` `workers/render/peaks/` `workers/render/edl/` | 纯逻辑（可在 Node 单测） | 仅 TypedArray / Math / 自身；**禁止** `wx.*`；**禁止** require 本目录之外的任何路径 |
 | `workers/render/render.ts` `workers/render/index.ts` | 渲染引擎与 Worker 入口 | 同目录纯逻辑 + 仅类型的协议定义 |
 | `core/engine/` `core/history/` `core/store/` | 主线程调度与状态 | 纯逻辑（反向 require `workers/render/**`）+ `core/fs` |
+| `core/view/` | 视口与手势几何（纯计算） | 仅 `core/types` 类型 |
 | `core/audio/` `core/fs/` `core/player/` `core/caps.ts` | 平台适配 | `wx.*` 仅允许出现在这几处 |
 | `core/types.ts` | 数据模型类型 | 仅类型声明，无运行时代码 |
 | `pages/` `components/` | 视图与交互 | `core/**`，不直接触碰 `wx.*` 文件/音频 API |
@@ -177,7 +179,7 @@ MP3 导出（lamejs）、隐私协议与合规自查、审核问题修复、埋�
 | 峰值数据内存 | ≤ 1MB / 10 分钟音频 | 公式保障 |
 | Worker 消息频率 | ≤ 1 条 / 块（约每 30～80ms 一条） | 计数打点 |
 | 工程 JSON 体积 | ≤ 50KB | 保存时校验并告警 |
-| 波形重绘 | 手势期间不做全量重绘 | 代码审查 |
+| 波形重绘 | 手势期间不做全量重绘（例外见下方“豁免登记”） | 代码审查 |
 
 **实测参考（2026-09-12）**
 
@@ -198,6 +200,15 @@ MP3 导出（lamejs）、隐私协议与合规自查、审核问题修复、埋�
 ⚠️ 上述数据来自 Node，**不能替代真机**：真机的 JS 引擎（iOS JavaScriptCore / Android V8）与内存约束不同。DB-12 的真机复测仍待完成（方法：在 spike 页中跑同一处理链并对比耗时）。
 
 > 本节仅记录**已获得**的实测值；尚未实测的项不在此处出现。
+
+### 4.1 豁免登记
+
+绕过红线或指标的例外必须在此登记（依据 [AGENTS §5](../AGENTS.md#5-性能与内存红线)）：
+
+| 豁免项 | 原因 | 责任人 | 复查时间 | 关联代码 |
+| --- | --- | --- | --- | --- |
+| 双指缩放波形时**整幅重绘** | 缩放改变像素密度，离屏位图无法平移复用；不重绘就看不到缩放结果。已用限帧（约 30fps）+ 隔列降级（每 2px 一列）把单帧成本压到一半 | swcrbt | M1 真机验证后（DB-13 Canvas 帧率结论回填时；不达标则改为 CSS transform 视觉缩放） | `components/waveform-canvas/index.ts` |
+| 播放位置更新时重画叠加层 | 每 100ms 一次 `drawImage` + 叠加层，**不重绘波形**（波形位图来自离屏 canvas） | swcrbt | 同上行 | `components/waveform-canvas/index.ts` |
 
 ## 5. 合规与审核
 

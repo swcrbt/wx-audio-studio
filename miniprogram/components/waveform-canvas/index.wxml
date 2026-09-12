@@ -1,1 +1,10 @@
-<view class="placeholder"></view>
+<canvas
+  type="2d"
+  id="wave"
+  class="waveform"
+  disable-scroll="{{true}}"
+  bindtouchstart="handleTouchStart"
+  bindtouchmove="handleTouchMove"
+  bindtouchend="handleTouchEnd"
+  bindtouchcancel="handleTouchCancel"
+/>

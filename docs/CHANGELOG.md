@@ -17,6 +17,7 @@
 
 | 日期 | 文档 | 类型 | 摘要 | 关联代码 |
 | --- | --- | --- | --- | --- |
+| 2026-09-12 | `docs/04` `docs/06` | 新增 | 编辑器/主页落地：`docs/04` §3 补“M1 实现范围”（单素材切割视图）与 §7 组件落地状态；`docs/06` §1 目录树补 `core/view/`，§1.1 分层表拆出“视口与手势几何”，**§4.1 新增豁免登记表**（波形缩放手势的整幅重绘 + 播放位置叠加层重画） | `components/waveform-canvas/**` `pages/{index,editor}/**` `core/view/viewport.ts` `core/store/**` |
 | 2026-09-12 | `docs/03` `docs/06` | 新增 | 播放层落地：`docs/03` §7 补实现位置（transport / clip-preview / preview-cache）与脏区间调度说明；`docs/06` §1 目录树细化 `core/player/` 与 `tests/player/` | `core/player/*.ts` |
 | 2026-09-12 | `docs/05` `docs/06` | 新增 | 工程状态层：`docs/05` §7 补实现位置（命令必须经 `ProjectStore.commit`）；§4.1 索引新增 `lastOpenedProjectId`（会话恢复）；`docs/06` §1 目录树补 `core/store/` 与 `tests/{store,audio}/`，§1.1 分层表将 `core/store/` 归入“主线程调度与状态” | `core/store/project-store.ts` `core/fs/store.ts` |
 | 2026-09-12 | `docs/03` | 修改 | §3 录音落盘补“PC 处理”说明：PC 微信不支持设置 `sampleRate`，无法保证中间格式采样率，因此录音在 PC 上明确拒绝（需 PC 录音时先录后重采样）；关联代码回填 `core/audio/record.ts` | `core/audio/record.ts` |

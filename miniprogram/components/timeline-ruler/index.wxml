@@ -1,1 +1,7 @@
-<view class="placeholder"></view>
+<view class="ruler">
+  <view wx:for="{{ticks}}" wx:key="sec" class="tick" style="left:{{item.xPx}}px">
+    <view class="tick-line"></view>
+    <text class="tick-label">{{item.label}}</text>
+  </view>
+  <view wx:if="{{ticks.length === 0}}" class="ruler-empty"></view>
+</view>

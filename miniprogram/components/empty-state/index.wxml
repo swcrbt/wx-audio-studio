@@ -1,1 +1,22 @@
-<view class="placeholder"></view>
+<view class="empty">
+  <view class="empty-art empty-art-{{type}}">
+    <view class="bar bar-1"></view>
+    <view class="bar bar-2"></view>
+    <view class="bar bar-3"></view>
+    <view class="bar bar-4"></view>
+    <view class="bar bar-5"></view>
+  </view>
+
+  <text class="empty-title">{{title}}</text>
+  <text wx:if="{{desc}}" class="empty-desc">{{desc}}</text>
+
+  <view wx:if="{{actions.length > 0}}" class="empty-actions">
+    <view
+      wx:for="{{actions}}"
+      wx:key="key"
+      class="empty-btn {{item.primary ? 'empty-btn-primary' : ''}}"
+      data-key="{{item.key}}"
+      bindtap="handleAction"
+    >{{item.label}}</view>
+  </view>
+</view>

@@ -42,3 +42,27 @@ export function formatDb(db: number): string {
   if (db <= -60) return '-∞ dB';
   return `${db >= 0 ? '+' : ''}${db.toFixed(1)} dB`;
 }
+
+/**
+ * 时间戳 → 相对时间（列表页用）。
+ *
+ * @param now 当前时间戳（测试可注入）；不传用 `Date.now()`
+ */
+export function formatRelativeTime(timestamp: number, now: number = Date.now()): string {
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return '未知时间';
+  const diffMs = now - timestamp;
+  if (diffMs < 0) return '刚刚';
+
+  const minuteMs = 60 * 1000;
+  const hourMs = 60 * minuteMs;
+  const dayMs = 24 * hourMs;
+
+  if (diffMs < minuteMs) return '刚刚';
+  if (diffMs < hourMs) return `${Math.floor(diffMs / minuteMs)} 分钟前`;
+  if (diffMs < dayMs) return `${Math.floor(diffMs / hourMs)} 小时前`;
+  if (diffMs < 30 * dayMs) return `${Math.floor(diffMs / dayMs)} 天前`;
+
+  const date = new Date(timestamp);
+  const pad = (n: number): string => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}

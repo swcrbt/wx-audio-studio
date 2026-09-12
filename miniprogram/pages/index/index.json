@@ -1,3 +1,8 @@
 {
-  "navigationBarTitleText": "index"
+  "navigationBarTitleText": "项目",
+  "navigationBarBackgroundColor": "#F5F6F8",
+  "navigationBarTextStyle": "black",
+  "usingComponents": {
+    "empty-state": "../../components/empty-state/index"
+  }
 }

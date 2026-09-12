@@ -1,1 +1,79 @@
-<view class="page"></view>
+<page-meta page-style="overflow: hidden; background-color: #12151A;" />
+
+<view class="editor">
+  <!-- 顶部：工程名 + 撤销/重做 -->
+  <view class="topbar">
+    <text class="project-name">{{projectName}}</text>
+    <view class="topbar-actions">
+      <view
+        class="chip {{canUndo ? '' : 'chip-disabled'}}"
+        bindtap="handleUndo"
+        aria-label="撤销"
+      >撤销{{undoLabel ? ' ' + undoLabel : ''}}</view>
+      <view
+        class="chip {{canRedo ? '' : 'chip-disabled'}}"
+        bindtap="handleRedo"
+        aria-label="重做"
+      >重做</view>
+    </view>
+  </view>
+
+  <!-- 加载 / 错误 -->
+  <view wx:if="{{loading}}" class="banner">正在准备波形…</view>
+  <view wx:elif="{{error}}" class="banner banner-error">
+    <text>{{error}}</text>
+    <view class="banner-action" bindtap="handleLeave">返回</view>
+  </view>
+
+  <block wx:else>
+    <!-- 时间标尺 -->
+    <timeline-ruler ticks="{{ticks}}" />
+
+    <!-- 波形区 -->
+    <view class="wave-area">
+      <waveform-canvas
+        id="wave"
+        durationSec="{{durationSec}}"
+        sampleRate="{{sampleRate}}"
+        bindgesturecommit="handleGestureCommit"
+        bindviewchange="handleViewChange"
+      />
+      <view wx:if="{{preparing}}" class="preparing">正在准备…</view>
+      <view wx:if="{{readOnly}}" class="readonly-tip">存储不足，已进入只读模式</view>
+    </view>
+
+    <!-- 播放控制 -->
+    <view class="transport">
+      <view class="t-btn" bindtap="handleSeekStart">◀◀</view>
+      <view class="t-btn t-btn-primary" bindtap="handleTogglePlay">{{playing ? '⏸' : '▶'}}</view>
+      <view class="t-btn" bindtap="handleSeekEnd">▶▶</view>
+      <text class="t-time">{{positionLabel}} / {{durationLabel}}</text>
+      <view class="t-rate" bindtap="handleCycleRate">{{rateLabel}}</view>
+    </view>
+
+    <!-- 缩放控制 -->
+    <view class="zoom-row">
+      <view class="z-btn" bindtap="handleZoomOut">−</view>
+      <text class="z-info">{{zoomLabel}}</text>
+      <view class="z-btn" bindtap="handleZoomIn">＋</view>
+      <view class="z-btn" bindtap="handleZoomFit">适配</view>
+      <text class="z-selection">{{selectionLabel}}</text>
+    </view>
+
+    <!-- 编辑工具 -->
+    <scroll-view class="tools" scroll-x enable-flex>
+      <view
+        wx:for="{{tools}}"
+        wx:key="action"
+        class="tool {{item.enabled ? '' : 'tool-disabled'}}"
+        data-action="{{item.action}}"
+        bindtap="handleTool"
+      >{{item.label}}</view>
+    </scroll-view>
+
+    <view class="footer">
+      <view class="btn btn-ghost" bindtap="handleOpenMixer">混音</view>
+      <view class="btn btn-primary" bindtap="handleExport">导出</view>
+    </view>
+  </block>
+</view>

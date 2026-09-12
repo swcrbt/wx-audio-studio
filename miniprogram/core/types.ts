@@ -9,6 +9,9 @@ export type Id = string;
 /** 时间量一律用秒（float）；采样帧只出现在 DSP 与渲染内部。 */
 export type Seconds = number;
 
+/** 逻辑像素（与设备无关的 CSS 像素）。 */
+export type Px = number;
+
 /** 时间轴区间（秒），闭开区间 `[startSec, endSec)`。 */
 export interface TimeRange {
   startSec: Seconds;
