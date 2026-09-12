@@ -45,7 +45,7 @@ wx-audio-studio/
 │   │   ├── types.ts                  全部数据模型类型（仅类型声明）
 │   │   ├── engine/                   controller.ts（调度与 I/O）· export.ts（导出编排）· export-plan.ts（归一化与体积估算）· worker-protocol.ts（消息唯一定义处）
 │   │   ├── history/                  命令模式撤销栈
-│   │   ├── store/                    工程状态（EDL + 撤销栈 + 自动保存）· 打开/新建/导入工程
+│   │   ├── store/                    工程状态（EDL + 撤销栈 + 自动保存）· create/load/import/bgm
 │   │   ├── view/                     viewport.ts（视口与手势几何）· timeline-layout.ts（轨道/片段几何）· rolling-waveform.ts（录音滚动波形）
 │   │   ├── audio/                    import.ts（导入管线）· record.ts（录音管线）
 │   │   ├── fs/                       paths · io · errors · wav-file · store · quota · renders（成品扫描）

@@ -5,6 +5,8 @@
     <view class="topbar-actions">
       <view class="chip" bindtap="handleAddTrack">＋ 轨道</view>
       <view class="chip" bindtap="handleAddClip">＋ 片段</view>
+      <view class="chip" bindtap="handleAddBgm">＋ BGM</view>
+      <view class="chip" bindtap="handleRefillBgm">重铺</view>
       <view class="chip chip-primary" bindtap="handleTogglePreview">{{playing ? '⏸ 暂停' : '▶ 预览'}}</view>
     </view>
   </view>
@@ -52,4 +54,13 @@
       <view class="btn btn-primary" bindtap="handleExport">导出</view>
     </view>
   </block>
+
+  <param-sheet
+    visible="{{sheetVisible}}"
+    title="{{sheetTitle}}"
+    fields="{{sheetFields}}"
+    bind:change="handleSheetChange"
+    bind:action="handleSheetAction"
+    bind:close="handleSheetClose"
+  />
 </view>

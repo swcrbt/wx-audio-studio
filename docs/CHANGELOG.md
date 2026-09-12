@@ -17,6 +17,7 @@
 
 | 日期 | 文档 | 类型 | 摘要 | 关联代码 |
 | --- | --- | --- | --- | --- |
+| 2026-09-12 | `docs/04` `docs/06` | 新增 | 参数面板与 BGM 铺满：`docs/04` **§3.5 补 M1 落地状态**（ParamSheet 已接入淡入淡出/片段音量/轨道音量，并列出“包络预览、效果面板”缺口）、§4.3 补 **BGM 轨铺满策略**（为何不用 `clip.loop`）、§7 组件状态更新；`docs/06` §1 目录树补 `store/bgm.ts` | `components/param-sheet/**` `core/store/bgm.ts` |
 | 2026-09-12 | `docs/04` `docs/06` | 新增 | 混音页落地：`docs/04` §4.3 补 M1 实现范围与简化点（跨轨拖动降为末尾追加）、§7 组件落地状态更新；`docs/06` §1 目录树补 `timeline-layout.ts`、`preview-session.ts` 与 tests 子目录 | `pages/mixer/**` `components/{track-row,clip-block}/**` `core/view/timeline-layout.ts` `core/player/preview-session.ts` |
 | 2026-09-12 | `docs/02` `docs/03` `docs/04` | 新增 | 设置页与参数化录音采样率：`docs/02 §1.2` 补**官方采样率↔码率完整匹配表**（来源 S5，并修正核对结论表中本项目取值）；删去 §1.2/§1.3 重复的“社区反馈”段（SSOT）；`docs/03 §3` 录音参数表改为“采样率可配置且必须与工程一致”；`docs/04 §4.5` 设置项措辞修正并补落地状态 | `core/settings.ts` `core/audio/record.ts` `pages/settings/**` |
 | 2026-09-12 | `docs/03` `docs/04` `docs/05` `docs/06` | 新增 | “我的”页与导出后处理：`docs/03` **新增 §5.5 导出后处理**（为何变采样率/声道必须在渲染后做、内存与临时文件策略）；`docs/04` §4.5 补 M1 落地状态；`docs/05` §4 说明用户偏好存 Storage 不占数据目录配额；`docs/06` §1 目录树补 `fs/renders.ts` 与 `settings.ts` | `core/engine/export-resample.ts` `core/fs/renders.ts` `core/settings.ts` `pages/mine/**` |

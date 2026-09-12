@@ -5,6 +5,7 @@
   "backgroundColor": "#12151A",
   "disableScroll": true,
   "usingComponents": {
-    "track-row": "../../components/track-row/index"
+    "track-row": "../../components/track-row/index",
+    "param-sheet": "../../components/param-sheet/index"
   }
 }

@@ -46,6 +46,7 @@
     <view class="transport">
       <view class="t-btn" bindtap="handleSeekStart">◀◀</view>
       <view class="t-btn t-btn-primary" bindtap="handleTogglePlay">{{playing ? '⏸' : '▶'}}</view>
+      <view class="t-btn" bindtap="handleStop">■</view>
       <view class="t-btn" bindtap="handleSeekEnd">▶▶</view>
       <text class="t-time">{{positionLabel}} / {{durationLabel}}</text>
       <view class="t-rate" bindtap="handleCycleRate">{{rateLabel}}</view>
@@ -76,4 +77,13 @@
       <view class="btn btn-primary" bindtap="handleExport">导出</view>
     </view>
   </block>
+
+  <param-sheet
+    visible="{{sheetVisible}}"
+    title="{{sheetTitle}}"
+    fields="{{sheetFields}}"
+    bind:change="handleSheetChange"
+    bind:action="handleSheetAction"
+    bind:close="handleSheetClose"
+  />
 </view>

@@ -25,11 +25,13 @@ import {
   type Viewport,
 } from '../../core/view/viewport';
 import { deleteRange, setClipFade, setClipGainDb, splitClipAt, trimToRange } from '../../workers/render/edl/ops';
-import { MIN_GAIN_DB } from '../../workers/render/constants';
+import { clipById } from '../../workers/render/edl/query';
+import { MAX_GAIN_DB, MIN_GAIN_DB } from '../../workers/render/constants';
 import { edlDurationSec } from '../../workers/render/edl/query';
 import type { PeaksLevel } from '../../workers/render/peaks/build';
 import { readSettings } from '../../core/settings';
 import { formatDuration, formatDurationShort } from '../../utils/format';
+import type { ParamField } from '../../components/param-sheet/index';
 import { logger } from '../../utils/logger';
 
 /** 波形画布组件的对外方法（组件侧用 Component 定义，页面侧只关心这份契约）。 */
@@ -74,6 +76,14 @@ interface EditorState {
   focusAssetPath: string | null;
   unsubscribe: (() => void) | null;
   rate: number;
+  /** 参数面板当前编辑的对象与取值（拖动中只改这里，不碰 EDL）。 */
+  sheetKind: 'fade' | 'gain' | null;
+  sheet: {
+    durationSec: Seconds;
+    curve: 'linear' | 'equalPower';
+    target: 'in' | 'out' | 'both';
+    gainDb: number;
+  };
 }
 
 const states = new WeakMap<object, EditorState>();
@@ -94,6 +104,8 @@ function stateOf(instance: object): EditorState {
       focusAssetPath: null,
       unsubscribe: null,
       rate: 1,
+      sheetKind: null,
+      sheet: { durationSec: 0.5, curve: 'equalPower', target: 'both', gainDb: 0 },
     };
     states.set(instance, state);
   }
@@ -104,8 +116,8 @@ const TOOL_DEFS: ReadonlyArray<{ action: string; label: string; needsSelection: 
   { action: 'trim', label: '裁剪', needsSelection: true },
   { action: 'cut', label: '删除选区', needsSelection: true },
   { action: 'mute', label: '静音', needsSelection: true },
-  { action: 'fadeIn', label: '淡入', needsSelection: true },
-  { action: 'fadeOut', label: '淡出', needsSelection: true },
+  { action: 'fade', label: '淡入淡出…', needsSelection: false },
+  { action: 'gain', label: '音量…', needsSelection: false },
   { action: 'split', label: '在播放头分割', needsSelection: false },
   { action: 'clearSelection', label: '取消选区', needsSelection: true },
   { action: 'selectAll', label: '全选', needsSelection: false },
@@ -135,6 +147,9 @@ Page({
       label: tool.label,
       enabled: !tool.needsSelection,
     })) as ToolView[],
+    sheetVisible: false,
+    sheetTitle: '',
+    sheetFields: [] as ParamField[],
   },
 
   async onLoad(query: Record<string, string | undefined>) {
@@ -295,6 +310,14 @@ Page({
       applySelection(this);
       return;
     }
+    if (action === 'fade') {
+      openFadeSheet(this);
+      return;
+    }
+    if (action === 'gain') {
+      openGainSheet(this);
+      return;
+    }
 
     const selection = state.selection;
     try {
@@ -305,21 +328,9 @@ Page({
         if (!selection) return;
         commitEdl(this, '删除选区', (edl) => deleteRange(edl, selection, { ripple: true }, createId));
       } else if (action === 'mute') {
-        if (!selection || !state.focusTrackId || !state.focusClipId) return;
+        if (!state.focusTrackId || !state.focusClipId) return;
         commitEdl(this, '静音', (edl) =>
           setClipGainDb(edl, state.focusTrackId ?? '', state.focusClipId ?? '', MIN_GAIN_DB),
-        );
-      } else if (action === 'fadeIn' || action === 'fadeOut') {
-        if (!selection || !state.focusTrackId || !state.focusClipId) return;
-        const durationSec = Math.max(0.05, selection.endSec - selection.startSec);
-        commitEdl(this, action === 'fadeIn' ? '淡入' : '淡出', (edl) =>
-          setClipFade(
-            edl,
-            state.focusTrackId ?? '',
-            state.focusClipId ?? '',
-            action === 'fadeIn' ? 'in' : 'out',
-            { durationSec, curve: 'equalPower' },
-          ),
         );
       } else if (action === 'split') {
         if (!state.focusTrackId || !state.focusClipId) return;
@@ -347,6 +358,38 @@ Page({
     const projectId = stateOf(this).store?.project.id;
     if (!projectId) return;
     wx.navigateTo({ url: `/pages/mixer/mixer?projectId=${projectId}` });
+  },
+
+  /** 停止：停止播放并把播放头留在当前位置。 */
+  handleStop() {
+    const state = stateOf(this);
+    state.session?.stop();
+    this.setData({ playing: false });
+  },
+
+  /** 参数面板的实时/提交两级上报：拖动中只回显，松手才写进 EDL。 */
+  handleSheetChange(event: WechatMiniprogram.CustomEvent) {
+    const detail = event.detail as { key: string; value: number | boolean | string; committed: boolean };
+    const state = stateOf(this);
+    applySheetValue(state, detail.key, detail.value);
+    this.setData({ sheetFields: sheetFieldsFor(state) });
+    if (!detail.committed) return;
+    commitSheet(this);
+  },
+
+  handleSheetClose() {
+    this.setData({ sheetVisible: false });
+  },
+
+  /** 面板内的动作按钮（如“恢复 0dB”）。 */
+  handleSheetAction(event: WechatMiniprogram.CustomEvent) {
+    const key = (event.detail as { key?: string }).key;
+    const state = stateOf(this);
+    if (key === 'reset') {
+      state.sheet.gainDb = 0;
+      this.setData({ sheetFields: sheetFieldsFor(state) });
+      commitSheet(this);
+    }
   },
 
   handleLeave() {
@@ -458,6 +501,154 @@ function seekTo(page: WechatMiniprogram.Page.TrivialInstance, sec: Seconds): voi
   page.setData({ positionLabel: formatDuration(state.playheadSec) });
   waveCanvas(page)?.setPlayhead(state.playheadSec);
   state.session?.seek(state.playheadSec);
+}
+
+/** 参数面板：淡入淡出（时长/曲线/应用位置）与音量（dB 滑杆）。 */
+function openFadeSheet(page: WechatMiniprogram.Page.TrivialInstance): void {
+  const state = stateOf(page);
+  state.sheetKind = 'fade';
+  state.sheet.curve = 'equalPower';
+  state.sheet.target = 'both';
+
+  // 默认时长取当前选区长度（用户刚框完一段就调淡化，这个默认值才符合直觉）
+  const selection = state.selection;
+  const selectionSec = selection ? Math.abs(selection.endSec - selection.startSec) : 0;
+  state.sheet.durationSec = clampFadeSec(selectionSec > 0.05 ? selectionSec : 0.5);
+
+  page.setData({ sheetVisible: true, sheetTitle: '淡入淡出', sheetFields: sheetFieldsFor(state) });
+}
+
+function openGainSheet(page: WechatMiniprogram.Page.TrivialInstance): void {
+  const state = stateOf(page);
+  const store = state.store;
+  if (!store || !state.focusTrackId || !state.focusClipId) {
+    wx.showToast({ title: '先选中一个片段', icon: 'none' });
+    return;
+  }
+
+  const clip = clipById(store.edl, state.focusTrackId, state.focusClipId);
+  state.sheetKind = 'gain';
+  state.sheet.gainDb = Math.max(MIN_GAIN_DB, clip?.gainDb ?? 0);
+  page.setData({ sheetVisible: true, sheetTitle: '片段音量', sheetFields: sheetFieldsFor(state) });
+}
+
+function clampFadeSec(sec: Seconds): Seconds {
+  return Math.min(5, Math.max(0.05, Math.round(sec * 20) / 20));
+}
+
+function applySheetValue(
+  state: EditorState,
+  key: string,
+  value: number | boolean | string,
+): void {
+  if (key === 'durationSec' && typeof value === 'number') state.sheet.durationSec = clampFadeSec(value);
+  if (key === 'curve') state.sheet.curve = value === 'linear' ? 'linear' : 'equalPower';
+  if (key === 'target') {
+    state.sheet.target = value === 'in' || value === 'out' ? value : 'both';
+  }
+  if (key === 'gainDb' && typeof value === 'number') {
+    state.sheet.gainDb = Math.min(MAX_GAIN_DB, Math.max(MIN_GAIN_DB, value));
+  }
+}
+
+/** 回显字段（含单位文案）：页面负责格式化，组件只渲染。 */
+function sheetFieldsFor(state: EditorState): ParamField[] {
+  if (state.sheetKind === 'gain') {
+    const gainDb = state.sheet.gainDb;
+    return [
+      {
+        key: 'gainDb',
+        label: '增益',
+        type: 'slider',
+        value: gainDb,
+        min: MIN_GAIN_DB,
+        max: MAX_GAIN_DB,
+        step: 0.5,
+        displayValue: gainDb <= MIN_GAIN_DB ? '静音' : `${gainDb >= 0 ? '+' : ''}${gainDb.toFixed(1)} dB`,
+      },
+      { key: 'reset', label: '恢复 0dB', type: 'action', value: 0 },
+    ];
+  }
+
+  const { durationSec, curve, target } = state.sheet;
+  return [
+    {
+      key: 'durationSec',
+      label: '时长',
+      type: 'slider',
+      value: durationSec,
+      min: 0.05,
+      max: 5,
+      step: 0.05,
+      displayValue: `${durationSec.toFixed(2)}s`,
+    },
+    {
+      key: 'curve',
+      label: '曲线',
+      type: 'segmented',
+      value: curve,
+      displayValue: curve === 'linear' ? '线性' : '等功率',
+      options: [
+        { label: '等功率', value: 'equalPower' },
+        { label: '线性', value: 'linear' },
+      ],
+    },
+    {
+      key: 'target',
+      label: '应用',
+      type: 'segmented',
+      value: target,
+      displayValue: target === 'in' ? '仅淡入' : target === 'out' ? '仅淡出' : '两端',
+      options: [
+        { label: '淡入', value: 'in' },
+        { label: '淡出', value: 'out' },
+        { label: '两端', value: 'both' },
+      ],
+    },
+  ];
+}
+
+/** 把面板取值写进 EDL（一次命令，可撤销）。 */
+function commitSheet(page: WechatMiniprogram.Page.TrivialInstance): void {
+  const state = stateOf(page);
+  const store = state.store;
+  const trackId = state.focusTrackId;
+  const clipId = state.focusClipId;
+  if (!store || !trackId || !clipId) return;
+
+  const { durationSec, curve, target, gainDb } = state.sheet;
+
+  if (state.sheetKind === 'gain') {
+    // 滑杆连续拖动用同一合并键，避免每次松手都产生一条历史
+    const before = store.edl;
+    store.commit({
+      id: `gain-${clipId}`,
+      label: '调整音量',
+      at: Date.now(),
+      coalesceKey: `gain:${clipId}`,
+      apply: (edl) => setClipGainDb(edl, trackId, clipId, gainDb),
+      invert: () => before,
+    });
+    state.session?.markDirty();
+    return;
+  }
+
+  const fade = { durationSec, curve };
+  const before = store.edl;
+  store.commit({
+    id: `fade-${clipId}-${target}`,
+    label: '淡入淡出',
+    at: Date.now(),
+    coalesceKey: `fade:${clipId}:${target}`,
+    apply: (edl) => {
+      let next = edl;
+      if (target === 'in' || target === 'both') next = setClipFade(next, trackId, clipId, 'in', fade);
+      if (target === 'out' || target === 'both') next = setClipFade(next, trackId, clipId, 'out', fade);
+      return next;
+    },
+    invert: () => before,
+  });
+  state.session?.markDirty();
 }
 
 /** 提交一次 EDL 变更（正/逆操作都用快照引用：EDL 是不可变替换，旧对象仍完整）。 */

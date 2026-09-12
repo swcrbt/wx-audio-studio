@@ -6,6 +6,7 @@
   "disableScroll": true,
   "usingComponents": {
     "waveform-canvas": "../../components/waveform-canvas/index",
-    "timeline-ruler": "../../components/timeline-ruler/index"
+    "timeline-ruler": "../../components/timeline-ruler/index",
+    "param-sheet": "../../components/param-sheet/index"
   }
 }

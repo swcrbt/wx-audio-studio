@@ -1,1 +1,62 @@
-<view class="placeholder"></view>
+<view wx:if="{{visible}}" class="mask" bindtap="handleClose" catchtouchmove="noop"></view>
+
+<view class="sheet {{visible ? 'sheet-open' : ''}}">
+  <view class="sheet-head">
+    <text class="sheet-title">{{title}}</text>
+    <view class="sheet-done" bindtap="handleClose">完成</view>
+  </view>
+
+  <scroll-view class="sheet-body" scroll-y>
+    <view wx:for="{{fields}}" wx:key="key" class="field">
+      <view wx:if="{{item.type !== 'action'}}" class="field-head">
+        <text class="field-label">{{item.label}}</text>
+        <text class="field-value">{{item.displayValue}}</text>
+      </view>
+
+      <slider
+        wx:if="{{item.type === 'slider'}}"
+        class="field-slider"
+        value="{{item.value}}"
+        min="{{item.min}}"
+        max="{{item.max}}"
+        step="{{item.step}}"
+        block-size="24"
+        activeColor="#4C8DFF"
+        backgroundColor="#2A303C"
+        data-key="{{item.key}}"
+        bindchanging="handleSliderChanging"
+        bindchange="handleSliderChange"
+      />
+
+      <view wx:elif="{{item.type === 'switch'}}" class="field-switch">
+        <switch
+          checked="{{item.value}}"
+          color="#4C8DFF"
+          data-key="{{item.key}}"
+          bindchange="handleSwitchChange"
+        />
+      </view>
+
+      <view wx:elif="{{item.type === 'segmented'}}" class="segments">
+        <view
+          wx:for="{{item.options}}"
+          wx:for-item="opt"
+          wx:key="value"
+          class="segment {{opt.value === item.value ? 'segment-on' : ''}}"
+          data-key="{{item.key}}"
+          data-value="{{opt.value}}"
+          bindtap="handleSegmentTap"
+        >{{opt.label}}</view>
+      </view>
+
+      <view
+        wx:elif="{{item.type === 'action'}}"
+        class="action"
+        data-key="{{item.key}}"
+        bindtap="handleAction"
+      >{{item.label}}</view>
+    </view>
+
+    <view class="sheet-pad"></view>
+  </scroll-view>
+</view>

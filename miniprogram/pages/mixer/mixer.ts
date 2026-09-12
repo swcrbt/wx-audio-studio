@@ -15,6 +15,7 @@ import { PreviewSession } from '../../core/player/preview-session';
 import { ProjectStore, ProjectStoreError } from '../../core/store/project-store';
 import { openProject, ProjectLoadError } from '../../core/store/load-project';
 import { commitAddAsset } from '../../core/store/add-asset';
+import { commitAddBgm, mainDurationSec } from '../../core/store/bgm';
 import { createId, paths } from '../../core/fs/paths';
 import {
   addClip,
@@ -27,16 +28,18 @@ import {
   updateTrack,
 } from '../../workers/render/edl/ops';
 import { clipById, clipEndSec, clipSourceSpanSec, edlDurationSec, trackById } from '../../workers/render/edl/query';
-import { MIN_GAIN_DB } from '../../workers/render/constants';
+import { MIN_GAIN_DB, MAX_GAIN_DB } from '../../workers/render/constants';
 import { formatDuration, formatDurationShort } from '../../utils/format';
+import type { ParamField } from '../../components/param-sheet/index';
 import { logger } from '../../utils/logger';
 
 /** 轨道泳道最小宽度（像素），保证短工程也能看到可点区域。 */
 const MIN_LANE_WIDTH_PX = 320;
 const ZOOM_STEPS = [4, 8, 16, 32, 64, 128, 256, 400];
 
-/** 增益预设（dB）：避免在手机上拖滑杆，直接用档位选择。 */
+/** 增益预设（dB）已由参数面板的滑杆取代，保留列表仅为兼容旧引用。 */
 const GAIN_PRESETS = [0, -3, -6, -12, -18, MIN_GAIN_DB];
+void GAIN_PRESETS;
 
 interface MixerState {
   store: ProjectStore | null;
@@ -47,6 +50,9 @@ interface MixerState {
   session: PreviewSession | null;
   playheadSec: Seconds;
   unsubscribe: (() => void) | null;
+  /** 参数面板正在编辑的轨道（轨道增益用）。 */
+  sheetTrackId: Id;
+  sheetGainDb: number;
 }
 
 const states = new WeakMap<object, MixerState>();
@@ -63,6 +69,8 @@ function stateOf(instance: object): MixerState {
       session: null,
       playheadSec: 0,
       unsubscribe: null,
+      sheetTrackId: '',
+      sheetGainDb: 0,
     };
     states.set(instance, state);
   }
@@ -84,6 +92,9 @@ Page({
     playing: false,
     preparing: false,
     scrollLeft: 0,
+    sheetVisible: false,
+    sheetTitle: '',
+    sheetFields: [] as ParamField[],
   },
 
   async onLoad(query: Record<string, string | undefined>) {
@@ -206,11 +217,14 @@ Page({
         const tracks = store.project.tracks;
         if (tracks.length === 0) {
           commitAddAsset(store, asset, { label: '添加素材' });
+          state.session?.markDirty();
+          render(this);
           return;
         }
         if (tracks.length === 1) {
           const trackId = tracks[0]?.id ?? '';
           commitAppendClip(state, store, asset.id, trackId);
+          render(this);
           return;
         }
 
@@ -218,13 +232,88 @@ Page({
           itemList: tracks.map((track) => track.name),
           success: (picked) => {
             const track = tracks[picked.tapIndex];
-            if (track) commitAppendClip(state, store, asset.id, track.id);
+            if (!track) return;
+            commitAppendClip(state, store, asset.id, track.id);
+            render(this);
           },
           fail: () => undefined,
         });
       },
       fail: () => undefined,
     });
+  },
+
+  /**
+   * 添加背景音乐：选素材 → 新建 BGM 轨 → 循环铺满到主轨长度。
+   *
+   * 已存在 BGM 轨时直接重铺（避免每次长按都多一条轨道）。
+   */
+  handleAddBgm() {
+    const state = stateOf(this);
+    const store = state.store;
+    if (!store) return;
+
+    const assets = store.project.assets;
+    if (assets.length === 0) {
+      wx.showModal({ title: '还没有素材', content: '先录音或导入音频文件', showCancel: false });
+      return;
+    }
+
+    const existingBgm = findBgmTrackId(store);
+    wx.showActionSheet({
+      itemList: assets.map((asset) => `${asset.name}（${formatDurationShort(asset.durationSec)}）`),
+      success: (res) => {
+        const asset = assets[res.tapIndex];
+        if (!asset) return;
+
+        const untilSec = mainDurationSec(
+          store.edl,
+          existingBgm ? [existingBgm] : store.project.tracks.map((track) => track.id),
+        );
+        const count = commitAddBgm(store, asset, {
+          untilSec,
+          ...(existingBgm ? { trackId: existingBgm } : {}),
+        });
+
+        if (count === 0) {
+          wx.showToast({ title: '工程里还没有可对齐的内容', icon: 'none' });
+          return;
+        }
+        state.session?.markDirty();
+        render(this);
+        wx.showToast({ title: `已铺满 ${count} 段（共 ${formatDurationShort(untilSec)}）`, icon: 'none' });
+      },
+      fail: () => undefined,
+    });
+  },
+
+  /** 主轨变长后重新铺满 BGM。 */
+  handleRefillBgm() {
+    const state = stateOf(this);
+    const store = state.store;
+    if (!store) return;
+
+    const bgmTrackId = findBgmTrackId(store);
+    if (!bgmTrackId) {
+      wx.showToast({ title: '还没有背景音乐轨', icon: 'none' });
+      return;
+    }
+    const assetId = store.edl.tracks.find((track) => track.id === bgmTrackId)?.clips[0]?.assetId;
+    const asset = store.project.assets.find((item) => item.id === assetId);
+    if (!asset) {
+      wx.showToast({ title: '背景音乐素材已丢失', icon: 'none' });
+      return;
+    }
+
+    const untilSec = mainDurationSec(store.edl, [bgmTrackId]);
+    const count = commitAddBgm(store, asset, { untilSec, trackId: bgmTrackId });
+    if (count === 0) {
+      wx.showToast({ title: '没有可对齐的内容', icon: 'none' });
+      return;
+    }
+    state.session?.markDirty();
+    render(this);
+    wx.showToast({ title: `已重铺 ${count} 段`, icon: 'none' });
   },
 
   handleTrackAction(event: WechatMiniprogram.CustomEvent) {
@@ -266,16 +355,34 @@ Page({
       return;
     }
     if (detail.action === 'gain') {
-      wx.showActionSheet({
-        itemList: GAIN_PRESETS.map((db) => (db <= MIN_GAIN_DB ? '静音（最低）' : `${db} dB`)),
-        success: (res) => {
-          const gainDb = GAIN_PRESETS[res.tapIndex];
-          if (gainDb === undefined) return;
-          commitTrack(this, detail.trackId, '轨道音量', { gainDb });
-        },
-        fail: () => undefined,
-      });
+      openTrackGainSheet(this, detail.trackId);
     }
+  },
+
+  /** 轨道增益滑杆（-60dB ~ +12dB），拖动中只回显、松手才提交。 */
+  handleSheetChange(event: WechatMiniprogram.CustomEvent) {
+    const detail = event.detail as { key: string; value: number | boolean | string; committed: boolean };
+    const state = stateOf(this);
+    if (detail.key === 'gainDb' && typeof detail.value === 'number') {
+      state.sheetGainDb = Math.min(MAX_GAIN_DB, Math.max(MIN_GAIN_DB, detail.value));
+    }
+    this.setData({ sheetFields: trackGainFields(state.sheetGainDb) });
+    if (!detail.committed || !state.sheetTrackId) return;
+    commitTrack(this, state.sheetTrackId, '轨道音量', { gainDb: state.sheetGainDb });
+  },
+
+  handleSheetClose() {
+    this.setData({ sheetVisible: false });
+  },
+
+  /** “恢复 0dB”。 */
+  handleSheetAction(event: WechatMiniprogram.CustomEvent) {
+    const key = (event.detail as { key?: string }).key;
+    const state = stateOf(this);
+    if (key !== 'reset' || !state.sheetTrackId) return;
+    state.sheetGainDb = 0;
+    this.setData({ sheetFields: trackGainFields(0) });
+    commitTrack(this, state.sheetTrackId, '轨道音量', { gainDb: 0 });
   },
 
   handleClipAction(event: WechatMiniprogram.CustomEvent) {
@@ -484,6 +591,42 @@ function trackTemplate(id: Id, name: string, order: number): import('../../core/
 
 function emptyEdl(): Edl {
   return { sampleRate: 44100, channels: 1, assets: [], tracks: [] };
+}
+
+/** 找到背景音乐轨（按命名约定，属于展示层约定而非数据字段）。 */
+function findBgmTrackId(store: ProjectStore): Id | null {
+  const track = store.project.tracks.find((item) => item.name.includes('背景音乐'));
+  return track?.id ?? null;
+}
+
+/** 打开轨道增益面板（初值取当前增益）。 */
+function openTrackGainSheet(page: WechatMiniprogram.Page.TrivialInstance, trackId: Id): void {
+  const state = stateOf(page);
+  const store = state.store;
+  if (!store) return;
+
+  const track = store.edl.tracks.find((item) => item.id === trackId);
+  if (!track) return;
+
+  state.sheetTrackId = trackId;
+  state.sheetGainDb = Math.max(MIN_GAIN_DB, track.gainDb);
+  page.setData({ sheetVisible: true, sheetTitle: `轨道音量 · ${track.name}`, sheetFields: trackGainFields(state.sheetGainDb) });
+}
+
+function trackGainFields(gainDb: number): ParamField[] {
+  return [
+    {
+      key: 'gainDb',
+      label: '增益',
+      type: 'slider',
+      value: gainDb,
+      min: MIN_GAIN_DB,
+      max: MAX_GAIN_DB,
+      step: 0.5,
+      displayValue: gainDb <= MIN_GAIN_DB ? '静音' : `${gainDb >= 0 ? '+' : ''}${gainDb.toFixed(1)} dB`,
+    },
+    { key: 'reset', label: '恢复 0dB', type: 'action', value: 0 },
+  ];
 }
 
 function stepZoom(page: WechatMiniprogram.Page.TrivialInstance, direction: number): void {
