@@ -21,7 +21,11 @@ export default tseslint.config(
           patterns: [
             {
               group: ['wx', 'wx/*', '**/core/**'],
-              message: '纯逻辑层禁止依赖 wx.* 或 core/（见 AGENTS §1）',
+              // 类型导入允许：`core/types.ts` 与消息协议需要在两侧共享，
+              // 而 `import type` 编译后被消除，不会在 Worker 里产生运行时 require（ADR-0001）
+              allowTypeImports: true,
+              message:
+                '纯逻辑层禁止运行时依赖 wx.* 或 core/（类型可用 import type，见 AGENTS §1 与 ADR-0001）',
             },
             {
               group: ['../../**'],

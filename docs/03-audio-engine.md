@@ -250,21 +250,24 @@ export interface RenderJob {
 主线程                                     Worker
   │  open(targetPath, 'w+')  → fd            │
   │  writeWavHeader(占位, 总长按EDL估算)      │
-  │ ── postMessage({type:'render', job,      │
-  │      chunkIndex: 0}) ──────────────────► │
+  │ ── postMessage({type:'init', job}) ────► │
   │                                          │ ① 计算该块覆盖的时间区间
   │                                          │ ② 求值 EDL：找出有交集的 Clip
-  │  ◄── 请求素材数据 {assetId, byteRange} ── │ ③ 回报需要的素材字节区间
-  │  ④ fd 分块 read（每块读出 Int16 视图）    │
-  │ ── postMessage({pcm, ...}) ────────────► │ ⑤ DSP 处理 + 混音叠加到块缓冲
-  │                                          │ ⑥ Float32 → Int16 编码
-  │  ◄── {type:'chunkDone', bytes, next} ─── │
+  │  ◄── {assetRequest, assetId,             │ ③ 声明需要的素材**帧区间**
+  │      startFrame, frameCount} ─────────── │    （planChunk）
+  │  ④ fd 分块 read（按帧号换算字节偏移）      │
+  │ ── {assetChunk, assetId, startFrame,     │
+  │     channels, pcmBuffer} ──────────────► │ ⑤ DSP 处理 + 混音叠加到块缓冲
+  │                                          │ ⑥ 各声道 Float32 → 交错 Int16
+  │  ◄── {chunkDone, pcmBuffer, nextChunk} ─ │
   │  ⑦ write(fd, buffer, {position})         │
-  │  ⑧ chunkIndex++ → 回到 ①（直到完成）      │
+  │  ⑧ 回到 ①（直到 nextChunk === null）      │
   │  ⑨ write 回填头 → close(fd)               │
 ```
 
 **为什么让主线程读文件、Worker 只算**：官方已明确“Worker 内不支持 `wx` 系列的 API”，且 Worker 内代码**只能 require Worker 目录内的文件**（依据：[02 §1.5](./02-platform-capability.md#15-输入选择与多线程) 的 `S9`）。因此这个模式不是权衡结果而是**唯一可行方案**：把文件 I/O 留在主线程，Worker 退化为**纯计算单元**（只依赖 TypedArray / Math），且 Worker 内代码可在 Node 环境下直接单测。
+
+> **传输约定**：素材请求与回传统一用**帧号**（`startFrame` / `frameCount`），字节偏移由主线程根据素材声道数换算 —— Worker 不必知道 WAV 头布局；`pcmBuffer` 为**交错 Int16**。消息与 `RenderJob` 的唯一定义处是 `core/engine/worker-protocol.ts`（AGENTS §1）。
 
 > **目录归属约束**：由于“只能 require Worker 目录内的文件”，渲染引擎与其依赖的纯计算代码（`dsp/`、`edl/`、`codec/`、`peaks/`）必须**物理位于 `workers/render/` 内**，主线程与单测反向 require 同一份源码 —— 方案与理由见 [ADR-0001](./adr/0001-worker-code-packaging.md)，目录树见 [06 §1](./06-engineering-roadmap.md#1-目录结构)。
 
@@ -466,9 +469,16 @@ export interface PeaksRef { levels: { bucketSize: number; count: number }[]; fil
 export async function buildAndSavePeaks(channels: { dataPath: string; meta: WavMeta }, outPath: string): Promise<PeaksRef>;
 export function samplePeaks(peaks: PeakBuffer[], fromSample: number, toSample: number, px: number, out: Float32Array): void;
 
-// workers/render/render.ts（Worker 侧，纯计算）
-export function initJob(edl: Edl, output: RenderOutput, range: RenderRange, chunkSec: number): RenderState;
-export function renderChunk(state: RenderState, chunkIndex: number, assets: Map<string, Int16Array>): { pcm: Int16Array; nextChunk: number | null };
+// workers/render/render.ts（Worker 侧，纯计算；类型与 core/engine/worker-protocol.ts 对齐）
+export function initJob(job: RenderJobSpec): RenderState;
+/** 声明某块渲染所需的素材帧区间（主线程据此读盘并回传 assetChunk）。 */
+export function planChunk(state: RenderState, chunkIndex: number): AssetFrameRequest[];
+export function chunkBounds(state: RenderState, chunkIndex: number): { startSec: number; endSec: number; frames: number };
+/** 返回的 pcm 是**复用缓冲的视图**：调用方需在下一次 renderChunk 之前使用或拷贝。 */
+export function renderChunk(state: RenderState, chunkIndex: number, assets: AssetPcmMap): RenderChunkResult;
+
+/** M1 渲染路径已实现的效果类型（其余类型会被安全跳，由 UI 提示）。 */
+export const SUPPORTED_EFFECTS: readonly EffectType[]; // = ['highpass', 'eq10', 'gain']
 
 // core/engine/controller.ts（主线程侧，负责 I/O 与调度）
 export class RenderController {
